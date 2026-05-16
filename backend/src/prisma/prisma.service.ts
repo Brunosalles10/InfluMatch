@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hashPasswordMiddleware } from './middleware/hash-password.middleware';
 
 @Injectable()
@@ -16,6 +16,7 @@ export class PrismaService
 
   constructor() {
     super({
+      // Log apenas queries em desenvolvimento
       log:
         process.env.NODE_ENV === 'development'
           ? ['query', 'info', 'warn', 'error']

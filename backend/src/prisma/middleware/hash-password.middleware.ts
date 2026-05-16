@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 export const hashPasswordMiddleware: Prisma.Middleware = async (
