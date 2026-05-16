@@ -10,11 +10,11 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Nome não pode ser vazio' })
   @MaxLength(50, { message: 'Nome deve conter no máximo 50 caracteres' })
   @MinLength(3, { message: 'Nome deve conter no mínimo 3 caracteres' })
-  name: string;
+  name!: string;
 
-  @IsEmail({ message: 'Email inválido' })
+  @IsEmail({}, { message: 'Email inválido' })
   @IsNotEmpty({ message: 'Email não pode ser vazio' })
-  email: string;
+  email!: string;
 
   @IsNotEmpty({ message: 'Senha não pode ser vazia' })
   @MinLength(8, { message: 'Senha deve conter no mínimo 8 caracteres' })
@@ -26,5 +26,5 @@ export class CreateUserDto {
         'Senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial',
     },
   )
-  password: string;
+  password!: string;
 }
