@@ -5,7 +5,6 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { hashPasswordMiddleware } from './middleware/hash-password.middleware';
 
 @Injectable()
 export class PrismaService
@@ -13,19 +12,6 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
-
-  constructor() {
-    super({
-      // Log apenas queries em desenvolvimento
-      log:
-        process.env.NODE_ENV === 'development'
-          ? ['query', 'info', 'warn', 'error']
-          : ['warn', 'error'],
-    });
-
-    // Registra o middleware de hash de senha
-    this.$use(hashPasswordMiddleware);
-  }
 
   async onModuleInit() {
     try {

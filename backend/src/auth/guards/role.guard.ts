@@ -4,13 +4,14 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthUser } from '../interface/auth-user.interface';
 
 interface RequestWithUser {
-  user: AuthUser;
+  user?: AuthUser;
   params: { id?: string };
   method: string;
   url: string;
@@ -35,20 +36,27 @@ export class RolesGuard implements CanActivate {
 
     this.logger.log(`Verificando permissões para: ${route}`);
 
+    //se a rota for publica, permite o acesso
     if (!requiredRoles) {
-      return this.allow(`Rota pública: ${route}`);
+      return this.allow(`Rota pública ou sem restrição de role: ${route}`);
     }
 
-    if (!user?.role) this.deny('Usuário não autenticado ou sem role definida');
+    //se o usuario nao tiver role definida, nega o acesso
+    if (!user) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
 
+    //administradores tem acesso total
     if (user.role === 'ADMIN')
       return this.allow('administrador tem acesso total');
 
+    //verifica se o usuario tem a role necessaria para acessar a rota
     if (this.hasRole(user.role, requiredRoles)) {
       return this.allow(`Usuário com role "${user.role}" tem acesso à rota`);
     }
 
-    if (params.id) {
+    //verifica se o usuario e dono do recurso
+    if (params.id && user.sub) {
       if (this.isOwner(user.sub, params.id)) {
         return this.allow(
           `Usuário ${user.email} é dono do recurso ${params.id}`,

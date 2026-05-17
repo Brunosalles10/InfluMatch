@@ -1,8 +1,10 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
+
+export type UsuarioValidado = Omit<Usuario, 'senha'>;
 
 @Injectable()
 export class AuthService {
@@ -13,65 +15,29 @@ export class AuthService {
   ) {}
 
   //valida o usuário pelo email e senha
-  async validateUser(email: string, password: string) {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UsuarioValidado | null> {
     this.logger.debug(`Validando usuário: ${email}`);
 
-    //busca o usuário pelo email
-    const user = await this.usersService.findByEmail(email);
+    const usuario = await this.usersService.findByEmail(email);
 
-    //compara a senha informada com a senha armazenada
-    if (!user) {
-      this.logger.debug(`Usuário não encontrado: ${email}`);
-      return null;
+    if (usuario && (await bcrypt.compare(password, usuario.senha))) {
+      const { senha, ...result } = usuario;
+      return result; // Retorna o usuário sem a senha
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.senha);
-    if (!isPasswordValid) {
-      this.logger.debug(`Senha inválida para o usuário: ${email}`);
-      return null;
-    }
-
-    const { senha, ...result } = user;
-    return result;
+    return null;
   }
 
-  //realiza o login do usuário
-  async login(loginDto: LoginDto) {
-    this.logger.log(`📝 Tentativa de login: ${loginDto.email}`);
-    //busca o usuário pelo email
-    const user = await this.usersService.findByEmail(loginDto.email);
-    this.logger.debug(`Buscando usuário: ${loginDto.email}`);
-    //se o usuário não for encontrado, lança uma exceção
-    if (!user) {
-      this.logger.warn(
-        `Tentativa de login falhou para o email: ${loginDto.email}`,
-      );
-      throw new UnauthorizedException('Usuário não encontrado');
-    }
+  async login(user: UsuarioValidado) {
+    this.logger.log(`Gerando Token JWT para: ${user.email}`);
 
-    //verifica se a senha informada é válida
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.senha);
-
-    //se a senha for inválida, lança uma exceção
-    if (!isPasswordValid) {
-      this.logger.warn(
-        `Tentativa de login falhou para o email: ${loginDto.email} - Credenciais inválidas`,
-      );
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    this.logger.log(` Login bem-sucedido: ${user.email}`);
-
-    //cria o payload do token JWT
     const payload = { sub: user.id, email: user.email, role: user.role };
 
-    const access_token = this.jwtService.sign(payload);
-
-    this.logger.log(`🔐 Token JWT gerado para: ${user.email}`);
-
-    //retorna o token JWT e os dados do usuário
     return {
-      access_token: access_token, //usara o segredo definido no módulo de autenticação
+      access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         nome: user.nome,

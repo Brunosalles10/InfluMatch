@@ -30,7 +30,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   findAll() {
     this.logger.log('Listando todos os usuários');
     return this.usersService.findAll();
@@ -46,7 +46,7 @@ export class UsersController {
   //Busca usuario por ID, parseIntPipe garante que o id será um número
   @Get(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);
   }
@@ -59,14 +59,14 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles('ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT) //Retorna 204 No Content em caso de sucesso
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.remove(id);

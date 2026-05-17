@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Usuario } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CacheService } from '../redis/cache.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-users.dto';
@@ -26,12 +27,17 @@ export class UsersService {
       createUserDto.email,
     );
 
-    // Cria o usuário no banco (middleware Prisma criptografa a senha automaticamente)
+    const saltRounds = 10;
+    const senhaCriptografada = await bcrypt.hash(
+      createUserDto.password,
+      saltRounds,
+    );
+
     const newUser = await this.prisma.usuario.create({
       data: {
         nome: createUserDto.nome,
         email: createUserDto.email,
-        senha: createUserDto.password,
+        senha: senhaCriptografada,
         role: 'USER',
       },
     });
@@ -44,19 +50,20 @@ export class UsersService {
     return newUser;
   }
 
-  async findAll(): Promise<Usuario[]> {
+  async findAll(): Promise<Omit<Usuario, 'senha'>[]> {
     this.logger.log('Buscando todos os usuários');
 
-    const cacheKey = 'users:all';
+    const cacheKey = 'usuarios:all';
 
     // Tenta recuperar do cache
-    const cachedUsers = await this.cacheService.get<Usuario[]>(cacheKey);
+    const cachedUsers =
+      await this.cacheService.get<Omit<Usuario, 'senha'>[]>(cacheKey);
     if (cachedUsers) {
       this.logger.debug(`Retornando ${cachedUsers.length} usuários do cache`);
       return cachedUsers;
     }
 
-    // Busca do banco (sem senha)
+    // Busca do banco (sem retornar a senha por segurança)
     const users = await this.prisma.usuario.findMany({
       select: {
         id: true,
@@ -65,6 +72,7 @@ export class UsersService {
         role: true,
         ativo: true,
         criadoEm: true,
+        atualizadoEm: true,
       },
     });
 
@@ -73,13 +81,13 @@ export class UsersService {
     // Armazena no cache por 60 segundos
     await this.cacheService.set(cacheKey, users, 60);
 
-    return users as any;
+    return users;
   }
 
   async findOne(id: string): Promise<Usuario> {
     this.logger.log(`Buscando usuário ID: ${id}`);
 
-    const cacheKey = `user:${id}`;
+    const cacheKey = `usuario:${id}`;
 
     // Tenta recuperar do cache
     const cachedUser = await this.cacheService.get<Usuario>(cacheKey);
@@ -112,18 +120,18 @@ export class UsersService {
     );
 
     // Prepara dados para atualização
-    const dataToUpdate = {
-      ...(dto.name && { nome: dto.name }),
-      ...(dto.email && { email: dto.email }),
-      ...(dto.password && { senha: dto.password }),
-    };
+    const dataToUpdate: any = {};
+    if (dto.nome) dataToUpdate.nome = dto.nome;
+    if (dto.email) dataToUpdate.email = dto.email;
+    if (dto.password) {
+      dataToUpdate.senha = await bcrypt.hash(dto.password, 10); // Criptografa se houver senha nova
+    }
 
-    // Atualiza no banco (middleware Prisma criptografa a senha se foi fornecida)
+    // Atualiza no banco
     const updatedUser = await this.prisma.usuario.update({
       where: { id },
       data: dataToUpdate,
     });
-
     this.logger.log(`Usuário ID ${id} atualizado com sucesso`);
 
     // Dispara ações pós-atualização
@@ -149,7 +157,7 @@ export class UsersService {
     await this.handlePostActionsUtil.execute({ id }, 'deleted');
   }
 
-  async findByEmail(email: string): Promise<Usuario> {
+  async findByEmail(email: string): Promise<Usuario | null> {
     this.logger.debug(`Buscando usuário por email: ${email}`);
 
     return await this.prisma.usuario.findUnique({
