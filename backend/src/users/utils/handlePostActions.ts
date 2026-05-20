@@ -1,64 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Usuario } from '@prisma/client';
 import { CacheService } from '../../redis/cache.service';
-import { PubSubService } from '../../redis/pubsub.service';
 
 interface DeletePayload {
   id: string;
 }
 
-// Garante que nunca envie os dados sensíveis
-type ActionPayload = Omit<Usuario, 'senha'> | DeletePayload;
-
 @Injectable()
 export class HandlePostActionsUtil {
   private readonly logger = new Logger(HandlePostActionsUtil.name);
 
-  constructor(
-    private readonly cacheService: CacheService,
-    private readonly pubSubService: PubSubService,
-  ) {}
+  constructor(private readonly cacheService: CacheService) {}
 
   async execute(
     data: Usuario | DeletePayload,
     action: 'created' | 'updated' | 'deleted',
   ): Promise<void> {
-    // Limpa caches
+    // Invalida os caches antigos para que a próxima requisição busque dados frescos
     await this.clearCaches(data);
 
-    // Publica evento
-    const topic = `usuario.${action}`;
-    const payload = this.buildPayload(data, action);
-    await this.pubSubService.publish(topic, payload);
-
-    this.logger.log(`Cache limpo e evento ${topic} disparado.`);
+    // Como estamos no padrão MVC, no futuro você pode usar o @nestjs/event-emitter aqui
+    // para tarefas em background (como enviar email) sem precisar do Pub/Sub.
+    this.logger.log(`Ação '${action}' concluída. Cache sincronizado.`);
   }
 
   private async clearCaches(data: Usuario | DeletePayload): Promise<void> {
-    const cacheKeysList = 'usuarios:all';
     const cacheKeySpecific = `usuario:${data.id}`;
 
-    const promises = [
-      this.cacheService.del(cacheKeysList),
-      this.cacheService.del(cacheKeySpecific),
-    ];
-    await Promise.all(promises);
+    //  Deleta o cache específico deste usuário
+    await this.cacheService.del(cacheKeySpecific);
 
-    this.logger.debug(
-      ` Caches deletados: "${cacheKeysList}", "${cacheKeySpecific}"`,
-    );
-  }
+    //  Deleta TODAS as páginas de cache da listagem de usuários.
+    await this.cacheService.deleteByPrefix('usuarios:page:*');
 
-  // Constrói o payload para publicação
-  private buildPayload(
-    data: Usuario | DeletePayload,
-    action: string,
-  ): ActionPayload {
-    if (action === 'deleted') {
-      return data as DeletePayload;
-    }
-
-    const { senha, ...payload } = data as Usuario;
-    return payload;
+    this.logger.debug(`Caches invalidados para o usuário ID: ${data.id}`);
   }
 }

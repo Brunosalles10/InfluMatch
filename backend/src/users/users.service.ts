@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -16,6 +17,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
     private readonly handlePostActionsUtil: HandlePostActionsUtil,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<Usuario> {
@@ -27,7 +29,10 @@ export class UsersService {
       createUserDto.email,
     );
 
-    const saltRounds = 10;
+    // Criptografa a senha usando bcrypt
+    const saltRounds = Number(
+      this.configService.get<number>('BCRYPT_SALT_ROUNDS', 10),
+    );
     const senhaCriptografada = await bcrypt.hash(
       createUserDto.password,
       saltRounds,
@@ -44,46 +49,65 @@ export class UsersService {
 
     this.logger.log(`Novo usuário criado com sucesso: ${newUser.email}`);
 
-    // Dispara ações pós-criação (cache + pub/sub)
     await this.handlePostActionsUtil.execute(newUser, 'created');
 
     return newUser;
   }
 
-  async findAll(): Promise<Omit<Usuario, 'senha'>[]> {
-    this.logger.log('Buscando todos os usuários');
+  // Método de listagem com paginação e cache
+  async findAll(page: number = 1, limit: number = 20) {
+    this.logger.log(`Buscando usuários - Página: ${page}, Limite: ${limit}`);
 
-    const cacheKey = 'usuarios:all';
+    // A chave do cache dinamicamente inclui a página e o limite para diferenciar os resultados
+    const cacheKey = `usuarios:page:${page}:limit:${limit}`;
 
     // Tenta recuperar do cache
-    const cachedUsers =
-      await this.cacheService.get<Omit<Usuario, 'senha'>[]>(cacheKey);
-    if (cachedUsers) {
-      this.logger.debug(`Retornando ${cachedUsers.length} usuários do cache`);
-      return cachedUsers;
+    const cachedResult = await this.cacheService.get<any>(cacheKey);
+    if (cachedResult) {
+      this.logger.debug(`Retornando usuários do cache (Página ${page})`);
+      return cachedResult;
     }
 
-    // Busca do banco (sem retornar a senha por segurança)
-    const users = await this.prisma.usuario.findMany({
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        role: true,
-        ativo: true,
-        criadoEm: true,
-        atualizadoEm: true,
-      },
-    });
+    // Calcula o offset (quantos registros pular no banco)
+    const skip = (page - 1) * limit;
 
-    this.logger.log(`Encontrados ${users.length} usuários no banco de dados.`);
+    // Busca os dados e o total de registros em paralelo para otimizar a performance
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.usuario.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          role: true,
+          ativo: true,
+          criadoEm: true,
+          atualizadoEm: true,
+        },
+      }),
+      this.prisma.usuario.count(),
+    ]);
+
+    // Estrutura o retorno com os metadados da paginação
+    const result = {
+      data: users,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
+
+    this.logger.log(
+      `Encontrados ${users.length} usuários na página ${page} (Total: ${total}).`,
+    );
 
     // Armazena no cache por 60 segundos
-    await this.cacheService.set(cacheKey, users, 60);
+    await this.cacheService.set(cacheKey, result, 60);
 
-    return users;
+    return result;
   }
 
+  // Método de busca por ID com cache
   async findOne(id: string): Promise<Usuario> {
     this.logger.log(`Buscando usuário ID: ${id}`);
 
@@ -124,7 +148,10 @@ export class UsersService {
     if (dto.nome) dataToUpdate.nome = dto.nome;
     if (dto.email) dataToUpdate.email = dto.email;
     if (dto.password) {
-      dataToUpdate.senha = await bcrypt.hash(dto.password, 10); // Criptografa se houver senha nova
+      const saltRounds = Number(
+        this.configService.get<number>('BCRYPT_SALT_ROUNDS', 10),
+      );
+      dataToUpdate.senha = await bcrypt.hash(dto.password, saltRounds);
     }
 
     // Atualiza no banco

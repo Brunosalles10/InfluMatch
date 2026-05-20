@@ -1,7 +1,6 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import Redis from 'ioredis';
 import { CacheService } from './cache.service';
-import { PubSubService } from './pubsub.service';
 
 // Módulo Redis global para cache e Pub/Sub
 @Global()
@@ -29,8 +28,7 @@ import { PubSubService } from './pubsub.service';
       },
     },
     CacheService,
-    PubSubService,
   ],
-  exports: ['REDIS_CLIENT', CacheService, PubSubService],
+  exports: ['REDIS_CLIENT', CacheService],
 })
 export class RedisModule {}

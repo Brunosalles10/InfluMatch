@@ -1,23 +1,26 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Logger,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
-  Request,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/role.guard';
-import { AuthUser } from '../auth/interface/auth-user.interface';
+import type { AuthUser } from '../auth/interface/auth-user.interface';
 import { UpdateUserDto } from '../users/dto/update-users.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
@@ -31,16 +34,19 @@ export class UsersController {
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
-  findAll() {
-    this.logger.log('Listando todos os usuários');
-    return this.usersService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    this.logger.log(`Listando usuários - Página: ${page}, Limite: ${limit}`);
+    return this.usersService.findAll(page, limit);
   }
 
-  //Rota protegida que retorna o perfil do usuário autenticado, usando o AuthGuard com estratégia JWT
+  // Rota protegida que retorna o perfil do usuário autenticado
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
-  getProfile(@Request() req: Request & { user: AuthUser }) {
-    return this.usersService.findOne(req.user.sub);
+  getProfile(@CurrentUser() user: AuthUser) {
+    return this.usersService.findOne(user.sub);
   }
 
   //Busca usuario por ID, parseIntPipe garante que o id será um número

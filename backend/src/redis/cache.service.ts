@@ -51,6 +51,39 @@ export class CacheService {
     }
   }
 
+  // Deleta chaves em lote baseadas em um padrão
+  async deleteByPrefix(prefix: string): Promise<void> {
+    try {
+      let cursor = '0';
+      let keysDeleted = 0;
+
+      do {
+        // Escaneia 100 chaves por vez procurando o padrão
+        const [nextCursor, keys] = await this.redisClient.scan(
+          cursor,
+          'MATCH',
+          prefix,
+          'COUNT',
+          100,
+        );
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          await this.redisClient.del(...keys);
+          keysDeleted += keys.length;
+        }
+      } while (cursor !== '0');
+
+      if (keysDeleted > 0) {
+        this.logger.log(
+          `Cache DEL (Prefixo) → ${keysDeleted} chaves apagadas (${prefix})`,
+        );
+      }
+    } catch (err) {
+      this.handleError('deletar por prefixo', prefix, err);
+    }
+  }
+
   // Função auxiliar para lidar com erros
   private handleError(operation: string, key: string, error: unknown): void {
     const errorMessage =
