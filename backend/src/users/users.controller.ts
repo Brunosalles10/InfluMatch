@@ -65,9 +65,13 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  @Roles('ADMIN', 'USER')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() currentUser: AuthUser,
+  ) {
+    return this.usersService.update(id, dto, currentUser);
   }
 
   @Delete(':id')

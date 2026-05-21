@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AuthUser } from 'src/auth/interface/auth-user.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CacheService } from '../redis/cache.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -129,13 +130,27 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<Usuario> {
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    currentUser: AuthUser,
+  ): Promise<Usuario> {
     this.logger.log(`Atualizando usuário ID: ${id}`);
+
+    // Verifica permissão: ADMIN pode atualizar qualquer usuário, USER só pode atualizar seu próprio perfil
+    if (currentUser.role !== 'ADMIN' && currentUser.sub !== id) {
+      this.logger.warn(
+        `Violação de acesso: Usuário ${currentUser.sub} tentou alterar o usuário ${id}`,
+      );
+      throw new ForbiddenException(
+        'Você só tem permissão para alterar o seu próprio perfil.',
+      );
+    }
 
     // Verifica se usuário existe
     const user = await UserValidationUtil.findUserOrFail(this.prisma, id);
 
-    // Valida email único (se foi fornecido email novo)
+    // Valida email único
     await UserValidationUtil.ensureEmailIsUnique(
       this.prisma,
       dto.email,
