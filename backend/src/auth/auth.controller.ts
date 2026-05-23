@@ -1,16 +1,12 @@
-import {
-  Body,
-  Controller,
-  Logger,
-  Post,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Logger, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
+import { ApiTags } from '@nestjs/swagger';
+import { AuthService, type UsuarioValidado } from './auth.service';
+import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
+@ApiTags('Authentication')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
   constructor(private readonly authService: AuthService) {}
@@ -19,11 +15,11 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
-    @Request() req: Request & { user: any },
+    @CurrentUser() user: UsuarioValidado,
   ) {
     this.logger.log(`Tentativa de login: ${loginDto.email}`);
-    const result = await this.authService.login(req.user);
-    this.logger.log(`Login bem-sucedido: ${req.user.email}`);
+    const result = await this.authService.login(user);
+    this.logger.log(`Login bem-sucedido: ${user.email}`);
     return result;
   }
 }

@@ -1,5 +1,10 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, Usuario } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export class UserValidationUtil {
@@ -55,5 +60,13 @@ export class UserValidationUtil {
 
     this.logger.error(`Erro inesperado: ${error.message}`, error.stack);
     throw error;
+  }
+
+  static ensureUserIsActive(user: Usuario): void {
+    if (!user.ativo) {
+      throw new ForbiddenException(
+        'Usuário inativo não pode realizar esta ação.',
+      );
+    }
   }
 }

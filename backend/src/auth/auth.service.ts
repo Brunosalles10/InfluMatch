@@ -23,9 +23,9 @@ export class AuthService {
 
     const usuario = await this.usersService.findByEmail(email);
 
-    if (usuario && (await bcrypt.compare(password, usuario.senha))) {
+    if (usuario?.ativo && (await bcrypt.compare(password, usuario.senha))) {
       const { senha, ...result } = usuario;
-      return result; // Retorna o usuário sem a senha
+      return result;
     }
 
     return null;
