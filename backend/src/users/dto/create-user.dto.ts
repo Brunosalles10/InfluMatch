@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer'; // ✓ NOVO
 import {
   IsEmail,
   IsNotEmpty,
@@ -10,10 +11,12 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Nome não pode ser vazio' })
   @MaxLength(50, { message: 'Nome deve conter no máximo 50 caracteres' })
   @MinLength(3, { message: 'Nome deve conter no mínimo 3 caracteres' })
+  @Transform(({ value }) => value?.trim())
   nome!: string;
 
   @IsEmail({}, { message: 'Email inválido' })
   @IsNotEmpty({ message: 'Email não pode ser vazio' })
+  @Transform(({ value }) => value?.trim().toLowerCase())
   email!: string;
 
   @IsNotEmpty({ message: 'Senha não pode ser vazia' })

@@ -1,14 +1,32 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Usuario } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Prisma, Usuario } from '@prisma/client';
 import { AuthUser } from 'src/auth/interface/auth-user.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CacheService } from '../redis/cache.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-users.dto';
+import {
+  UserMapper,
+  UserResponse,
+  userSafeSelect,
+} from './mappers/user.mapper';
+import { UserPasswordService } from './services/user-password.service';
 import { HandlePostActionsUtil } from './utils/handlePostActions';
 import { UserValidationUtil } from './utils/user-validation.utils';
+
+export interface PaginatedUsersResponse {
+  data: UserResponse[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
 
 @Injectable()
 export class UsersService {
@@ -18,25 +36,19 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
     private readonly handlePostActionsUtil: HandlePostActionsUtil,
-    private readonly configService: ConfigService,
+    private readonly userPasswordService: UserPasswordService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<Usuario> {
+  async create(createUserDto: CreateUserDto): Promise<UserResponse> {
     this.logger.log(`Iniciando criação de usuário: ${createUserDto.email}`);
 
-    // Valida se email é único
     await UserValidationUtil.ensureEmailIsUnique(
       this.prisma,
       createUserDto.email,
     );
 
-    // Criptografa a senha usando bcrypt
-    const saltRounds = Number(
-      this.configService.get<number>('BCRYPT_SALT_ROUNDS', 10),
-    );
-    const senhaCriptografada = await bcrypt.hash(
+    const senhaCriptografada = await this.userPasswordService.hash(
       createUserDto.password,
-      saltRounds,
     );
 
     const newUser = await this.prisma.usuario.create({
@@ -52,46 +64,37 @@ export class UsersService {
 
     await this.handlePostActionsUtil.execute(newUser, 'created');
 
-    return newUser;
+    return UserMapper.toResponse(newUser);
   }
 
-  // Método de listagem com paginação e cache
-  async findAll(page: number = 1, limit: number = 20) {
+  async findAll(
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<PaginatedUsersResponse> {
     this.logger.log(`Buscando usuários - Página: ${page}, Limite: ${limit}`);
 
-    // A chave do cache dinamicamente inclui a página e o limite para diferenciar os resultados
     const cacheKey = `usuarios:page:${page}:limit:${limit}`;
 
-    // Tenta recuperar do cache
-    const cachedResult = await this.cacheService.get<any>(cacheKey);
+    const cachedResult =
+      await this.cacheService.get<PaginatedUsersResponse>(cacheKey);
+
     if (cachedResult) {
       this.logger.debug(`Retornando usuários do cache (Página ${page})`);
       return cachedResult;
     }
 
-    // Calcula o offset (quantos registros pular no banco)
     const skip = (page - 1) * limit;
 
-    // Busca os dados e o total de registros em paralelo para otimizar a performance
     const [users, total] = await this.prisma.$transaction([
       this.prisma.usuario.findMany({
         skip,
         take: limit,
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          role: true,
-          ativo: true,
-          criadoEm: true,
-          atualizadoEm: true,
-        },
+        select: userSafeSelect,
       }),
       this.prisma.usuario.count(),
     ]);
 
-    // Estrutura o retorno com os metadados da paginação
-    const result = {
+    const result: PaginatedUsersResponse = {
       data: users,
       total,
       page,
@@ -102,55 +105,51 @@ export class UsersService {
       `Encontrados ${users.length} usuários na página ${page} (Total: ${total}).`,
     );
 
-    // Armazena no cache por 60 segundos
     await this.cacheService.set(cacheKey, result, 60);
 
     return result;
   }
 
-  // Método de busca por ID com cache
-  async findOne(id: string): Promise<Usuario> {
+  async findOne(id: string): Promise<UserResponse> {
     this.logger.log(`Buscando usuário ID: ${id}`);
 
     const cacheKey = `usuario:${id}`;
 
-    // Tenta recuperar do cache
-    const cachedUser = await this.cacheService.get<Usuario>(cacheKey);
+    const cachedUser = await this.cacheService.get<UserResponse>(cacheKey);
+
     if (cachedUser) {
       this.logger.debug(`Usuário ID ${id} retornado do cache`);
       return cachedUser;
     }
 
-    // Busca no banco ou lança erro
     const user = await UserValidationUtil.findUserOrFail(this.prisma, id);
 
-    // Armazena no cache por 60 segundos
-    await this.cacheService.set(cacheKey, user, 60);
+    const userResponse = UserMapper.toResponse(user);
 
-    return user;
+    await this.cacheService.set(cacheKey, userResponse, 60);
+
+    return userResponse;
   }
 
   async update(
     id: string,
     dto: UpdateUserDto,
     currentUser: AuthUser,
-  ): Promise<Usuario> {
+  ): Promise<UserResponse> {
     this.logger.log(`Atualizando usuário ID: ${id}`);
 
-    // Verifica permissão: ADMIN pode atualizar qualquer usuário, USER só pode atualizar seu próprio perfil
     if (currentUser.role !== 'ADMIN' && currentUser.sub !== id) {
       this.logger.warn(
         `Violação de acesso: Usuário ${currentUser.sub} tentou alterar o usuário ${id}`,
       );
+
       throw new ForbiddenException(
         'Você só tem permissão para alterar o seu próprio perfil.',
       );
     }
 
-    // Verifica se usuário existe
     const user = await UserValidationUtil.findUserOrFail(this.prisma, id);
 
-    // Valida email único
     await UserValidationUtil.ensureEmailIsUnique(
       this.prisma,
       dto.email,
@@ -158,45 +157,91 @@ export class UsersService {
       user.email,
     );
 
-    // Prepara dados para atualização
-    const dataToUpdate: any = {};
-    if (dto.nome) dataToUpdate.nome = dto.nome;
-    if (dto.email) dataToUpdate.email = dto.email;
-    if (dto.password) {
-      const saltRounds = Number(
-        this.configService.get<number>('BCRYPT_SALT_ROUNDS', 10),
-      );
-      dataToUpdate.senha = await bcrypt.hash(dto.password, saltRounds);
+    const dataToUpdate: Prisma.UsuarioUpdateInput = {};
+
+    if (dto.nome !== undefined) {
+      dataToUpdate.nome = dto.nome;
     }
 
-    // Atualiza no banco
+    if (dto.email !== undefined) {
+      dataToUpdate.email = dto.email;
+    }
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      throw new BadRequestException(
+        'Informe ao menos um campo para atualização.',
+      );
+    }
+
     const updatedUser = await this.prisma.usuario.update({
       where: { id },
       data: dataToUpdate,
     });
+
     this.logger.log(`Usuário ID ${id} atualizado com sucesso`);
 
-    // Dispara ações pós-atualização
     await this.handlePostActionsUtil.execute(updatedUser, 'updated');
 
-    return updatedUser;
+    return UserMapper.toResponse(updatedUser);
+  }
+
+  async updateOwnPassword(
+    userId: string,
+    dto: UpdatePasswordDto,
+  ): Promise<void> {
+    this.logger.log(`Atualizando senha do usuário ID: ${userId}`);
+
+    const user = await UserValidationUtil.findUserOrFail(this.prisma, userId);
+
+    UserValidationUtil.ensureUserIsActive(user);
+
+    const currentPasswordIsValid = await this.userPasswordService.compare(
+      dto.currentPassword,
+      user.senha,
+    );
+
+    if (!currentPasswordIsValid) {
+      throw new UnauthorizedException('Senha atual inválida.');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'A nova senha deve ser diferente da senha atual.',
+      );
+    }
+
+    const senhaCriptografada = await this.userPasswordService.hash(
+      dto.newPassword,
+    );
+
+    const updatedUser = await this.prisma.usuario.update({
+      where: { id: userId },
+      data: {
+        senha: senhaCriptografada,
+      },
+    });
+
+    this.logger.log(`Senha do usuário ID ${userId} atualizada com sucesso`);
+
+    await this.handlePostActionsUtil.execute(updatedUser, 'updated');
+  }
+
+  async removeOwnAccount(userId: string): Promise<void> {
+    this.logger.log(`Usuário ID ${userId} solicitou exclusão da própria conta`);
+
+    const user = await UserValidationUtil.findUserOrFail(this.prisma, userId);
+
+    UserValidationUtil.ensureUserIsActive(user);
+
+    await this.deactivateUser(user.id);
   }
 
   async remove(id: string): Promise<void> {
     this.logger.log(`Removendo usuário ID: ${id}`);
 
-    // Verifica se usuário existe
     await UserValidationUtil.findUserOrFail(this.prisma, id);
 
-    // Deleta do banco
-    await this.prisma.usuario.delete({
-      where: { id },
-    });
-
-    this.logger.log(`Usuário ID ${id} removido.`);
-
-    // Dispara ações pós-deleção (limpa cache + publica evento)
-    await this.handlePostActionsUtil.execute({ id }, 'deleted');
+    await this.deactivateUser(id);
   }
 
   async findByEmail(email: string): Promise<Usuario | null> {
@@ -205,5 +250,16 @@ export class UsersService {
     return await this.prisma.usuario.findUnique({
       where: { email },
     });
+  }
+
+  private async deactivateUser(id: string): Promise<void> {
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { ativo: false },
+    });
+
+    this.logger.log(`Usuário ID ${id} marcado como inativo.`);
+
+    await this.handlePostActionsUtil.execute({ id }, 'deleted');
   }
 }

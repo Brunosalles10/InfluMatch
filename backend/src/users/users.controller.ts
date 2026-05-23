@@ -16,16 +16,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/role.guard';
 import type { AuthUser } from '../auth/interface/auth-user.interface';
-import { UpdateUserDto } from '../users/dto/update-users.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-users.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
+@ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
@@ -49,7 +51,6 @@ export class UsersController {
     return this.usersService.findOne(user.sub);
   }
 
-  //Busca usuario por ID, parseIntPipe garante que o id será um número
   @Get(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
@@ -58,9 +59,19 @@ export class UsersController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.CREATED) //httpCode define o código de resposta HTTP
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
+  }
+
+  @Patch('me/password')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  updateOwnPassword(
+    @CurrentUser() currentUser: AuthUser,
+    @Body() dto: UpdatePasswordDto,
+  ) {
+    return this.usersService.updateOwnPassword(currentUser.sub, dto);
   }
 
   @Patch(':id')
@@ -74,10 +85,17 @@ export class UsersController {
     return this.usersService.update(id, dto, currentUser);
   }
 
+  @Delete('me')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeOwnAccount(@CurrentUser() currentUser: AuthUser) {
+    return this.usersService.removeOwnAccount(currentUser.sub);
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
-  @HttpCode(HttpStatus.NO_CONTENT) //Retorna 204 No Content em caso de sucesso
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.remove(id);
   }

@@ -18,6 +18,7 @@ import { LocalStrategy } from './local.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
+        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1h';
 
         // Fail-Fast: Se não houver chave, a aplicação quebra imediatamente
         if (!secret) {
@@ -28,7 +29,7 @@ import { LocalStrategy } from './local.strategy';
 
         return {
           secret,
-          signOptions: { expiresIn: '1h' },
+          signOptions: { expiresIn: expiresIn as any },
         };
       },
     }),
