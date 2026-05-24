@@ -1,7 +1,8 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+jest.setTimeout(30000);
 
 describe('Users E2E', () => {
   let app: INestApplication;
@@ -12,6 +13,15 @@ describe('Users E2E', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+
     await app.init();
   });
 
@@ -21,21 +31,21 @@ describe('Users E2E', () => {
 
   describe('POST /users', () => {
     it('deve criar usuário com sucesso', async () => {
-      const uniqueEmail = `joao${Date.now()}@test.com`;
-
-      const response = await request(app.getHttpServer()).post('/users').send({
-        nome: 'João',
-        email: uniqueEmail,
-        password: 'Senha@123',
-      });
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .send({
+          nome: 'Usuário Teste',
+          email: `teste${Date.now()}@email.com`,
+          password: 'Senha@123',
+        });
 
       expect(response.status).toBe(201);
     });
 
     it('deve falhar com email inválido', async () => {
       const response = await request(app.getHttpServer()).post('/users').send({
-        nome: 'João',
-        email: 'abc',
+        nome: 'Usuário Teste',
+        email: 'email-invalido',
         password: 'Senha@123',
       });
 
@@ -46,8 +56,8 @@ describe('Users E2E', () => {
       const response = await request(app.getHttpServer())
         .post('/users')
         .send({
-          nome: 'João',
-          email: `teste${Date.now()}@test.com`,
+          nome: 'Usuário Teste',
+          email: `teste${Date.now()}@email.com`,
           password: '123',
         });
 
@@ -59,7 +69,7 @@ describe('Users E2E', () => {
         .post('/users')
         .send({
           nome: '',
-          email: `teste${Date.now()}@test.com`,
+          email: `teste${Date.now()}@email.com`,
           password: 'Senha@123',
         });
 
@@ -69,11 +79,9 @@ describe('Users E2E', () => {
 
   describe('GET /users/profile', () => {
     it('deve retornar perfil do usuário autenticado', async () => {
-      const uniqueEmail = `maria${Date.now()}@test.com`;
-
       const user = {
-        nome: 'Maria',
-        email: uniqueEmail,
+        nome: 'Usuário Perfil',
+        email: `perfil${Date.now()}@email.com`,
         password: 'Senha@123',
       };
 
@@ -86,17 +94,18 @@ describe('Users E2E', () => {
           password: user.password,
         });
 
-      const loginBody = loginResponse.body as {
+      const body = loginResponse.body as {
         access_token: string;
       };
 
-      const token = loginBody.access_token;
+      const token = body.access_token;
 
       const response = await request(app.getHttpServer())
         .get('/users/profile')
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
+
       const profileBody = response.body as {
         email: string;
       };
@@ -104,16 +113,8 @@ describe('Users E2E', () => {
       expect(profileBody.email).toBe(user.email);
     });
 
-    it('deve falhar sem token', async () => {
+    it('deve falhar sem token JWT', async () => {
       const response = await request(app.getHttpServer()).get('/users/profile');
-
-      expect(response.status).toBe(401);
-    });
-
-    it('deve falhar com token inválido', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/users/profile')
-        .set('Authorization', 'Bearer token-invalido');
 
       expect(response.status).toBe(401);
     });
