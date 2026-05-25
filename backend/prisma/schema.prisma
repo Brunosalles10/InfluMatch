@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,22 +7,120 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
-  id        String      @id @default(uuid())
-  nome      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(255)
-  senha    String   @db.VarChar(255)
-  role     Role   @default(USER)
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
-  atualizadoEm DateTime @updatedAt @map("atualizado_em")
-
-  @@map("usuarios")
-  @@index([email])
-  @@index([role])
-}
-
 enum Role {
   USER
   ADMIN
+}
+
+enum Plataforma {
+  YOUTUBE
+  INSTAGRAM
+  TIKTOK
+}
+
+enum TipoConteudo {
+  VIDEO
+  SHORT
+  POST
+  REEL
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nome         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  senha        String   @db.VarChar(255)
+  role         Role     @default(USER)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@index([email])
+  @@index([role])
+  @@map("usuarios")
+}
+
+model Nicho {
+  id           String   @id @default(uuid())
+  nome         String   @unique @db.VarChar(80)
+  slug         String   @unique @db.VarChar(100)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  influenciadores Influenciador[]
+
+  @@index([slug])
+  @@map("nichos")
+}
+
+model Influenciador {
+  id           String   @id @default(uuid())
+  nome         String   @db.VarChar(150)
+  descricao    String?  @db.Text
+  imagemUrl    String?  @map("imagem_url") @db.VarChar(500)
+  nichoId      String?  @map("nicho_id")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  nicho         Nicho?         @relation(fields: [nichoId], references: [id], onDelete: SetNull)
+  perfisSociais PerfilSocial[]
+
+  @@index([nome])
+  @@index([nichoId])
+  @@map("influenciadores")
+}
+
+model PerfilSocial {
+  id                    String     @id @default(uuid())
+  influenciadorId       String     @map("influenciador_id")
+  plataforma            Plataforma
+  identificadorExterno  String     @map("identificador_externo") @db.VarChar(150)
+  nomeUsuario           String     @map("nome_usuario") @db.VarChar(150)
+  urlPerfil             String?    @map("url_perfil") @db.VarChar(500)
+  totalSeguidores       BigInt     @default(0) @map("total_seguidores")
+  totalVisualizacoes    BigInt     @default(0) @map("total_visualizacoes")
+  totalConteudos        Int        @default(0) @map("total_conteudos")
+  ultimaSincronizacaoEm DateTime?  @map("ultima_sincronizacao_em")
+  criadoEm              DateTime   @default(now()) @map("criado_em")
+  atualizadoEm          DateTime   @updatedAt @map("atualizado_em")
+
+  influenciador Influenciador @relation(fields: [influenciadorId], references: [id], onDelete: Cascade)
+  conteudos     Conteudo[]
+
+  @@unique([plataforma, identificadorExterno])
+  @@index([influenciadorId])
+  @@index([plataforma])
+  @@index([plataforma, totalSeguidores])
+  @@map("perfis_sociais")
+}
+
+model Conteudo {
+  id                   String       @id @default(uuid())
+  perfilSocialId       String       @map("perfil_social_id")
+  plataforma           Plataforma
+  tipoConteudo         TipoConteudo @map("tipo_conteudo")
+  identificadorExterno String       @map("identificador_externo") @db.VarChar(150)
+  titulo               String       @db.VarChar(255)
+  descricao            String?      @db.Text
+  urlConteudo          String?      @map("url_conteudo") @db.VarChar(500)
+  urlThumbnail         String?      @map("url_thumbnail") @db.VarChar(500)
+  totalViews           BigInt       @default(0) @map("total_views")
+  totalLikes           BigInt       @default(0) @map("total_likes")
+  totalComentarios     BigInt       @default(0) @map("total_comentarios")
+  taxaEngajamento      Float        @default(0) @map("taxa_engajamento")
+  publicadoEm          DateTime?    @map("publicado_em")
+  criadoEm             DateTime     @default(now()) @map("criado_em")
+  atualizadoEm         DateTime     @updatedAt @map("atualizado_em")
+
+  perfilSocial PerfilSocial @relation(fields: [perfilSocialId], references: [id], onDelete: Cascade)
+
+  @@unique([plataforma, identificadorExterno])
+  @@index([perfilSocialId])
+  @@index([plataforma])
+  @@index([tipoConteudo])
+  @@index([plataforma, tipoConteudo])
+  @@index([taxaEngajamento])
+  @@index([totalViews])
+  @@index([publicadoEm])
+  @@map("conteudos")
 }
