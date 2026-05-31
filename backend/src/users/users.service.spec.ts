@@ -1,13 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../redis/cache.service';
 import { UsersService } from './users.service';
 import { HandlePostActionsUtil } from './utils/handlePostActions';
-
-jest.mock('bcrypt');
+import { UserPasswordService } from './services/user-password.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -31,6 +29,11 @@ describe('UsersService', () => {
 
   const configServiceMock = {
     get: jest.fn().mockReturnValue(10),
+  };
+
+  const userPasswordServiceMock = {
+    hash: jest.fn(),
+    compare: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -57,6 +60,10 @@ describe('UsersService', () => {
           provide: ConfigService,
           useValue: configServiceMock,
         },
+        {
+          provide: UserPasswordService,
+          useValue: userPasswordServiceMock,
+        },
       ],
     }).compile();
 
@@ -77,7 +84,7 @@ describe('UsersService', () => {
 
       prismaMock.usuario.findUnique.mockResolvedValue(null);
 
-      (bcrypt.hash as jest.Mock).mockResolvedValue('senha-criptografada');
+      userPasswordServiceMock.hash.mockResolvedValue('senha-criptografada');
 
       prismaMock.usuario.create.mockResolvedValue({
         id: '1',
@@ -89,7 +96,7 @@ describe('UsersService', () => {
 
       const result = await service.create(dto);
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('Senha@123', 10);
+      expect(userPasswordServiceMock.hash).toHaveBeenCalledWith('Senha@123');
 
       expect(prismaMock.usuario.create).toHaveBeenCalled();
 
