@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: #05091b;
+  --color-background-secondary: #080d1f;
+
+  --color-surface: #0f172a;
+  --color-surface-elevated: #111827;
+  --color-surface-muted: #151b2e;
+
+  --color-border: #1e293b;
+  --color-border-strong: #26324f;
+
+  --color-primary: #0ea5e9;
+  --color-primary-hover: #38bdf8;
+
+  --color-secondary: #8b5cf6;
+  --color-secondary-hover: #a78bfa;
+
+  --color-success: #22c55e;
+  --color-warning: #f97316;
+  --color-danger: #f43f5e;
+
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+
+  --shadow-card: 0 20px 50px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 40px rgba(14, 165, 233, 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(14, 165, 233, 0.12),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(139, 92, 246, 0.14),
+      transparent 35%
+    ),
+    #05091b;
+  color: #f8fafc;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
