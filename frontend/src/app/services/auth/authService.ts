@@ -8,6 +8,7 @@ import {
   removerTokenAutenticacao,
   salvarTokenAutenticacao,
 } from "@/app/services/utils/authStorage";
+import { ErroApi } from "../api/ErroApi";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 class AuthService extends ServicoApiBase {
@@ -37,8 +38,9 @@ class AuthService extends ServicoApiBase {
       resposta.access_token ?? resposta.accessToken ?? resposta.token;
 
     if (!token) {
-      throw new Error(
+      throw new ErroApi(
         "Token de autenticação não encontrado na resposta do login.",
+        500,
       );
     }
 

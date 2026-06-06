@@ -3,6 +3,7 @@ import {
   obterTokenAutenticacao,
   removerTokenAutenticacao,
 } from "@/app/services/utils/authStorage";
+import { emitirEventoSessaoExpirada } from "@/app/utils/eventosAutenticacao";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { ErroApi } from "./ErroApi";
 
@@ -35,9 +36,11 @@ apiClient.interceptors.response.use(
   (erro: AxiosError<ErroBackend>) => {
     const statusCode = erro.response?.status;
     const dadosErro = erro.response?.data;
+    const haviaToken = Boolean(obterTokenAutenticacao());
 
-    if (statusCode === 401) {
+    if (statusCode === 401 && haviaToken) {
       removerTokenAutenticacao();
+      emitirEventoSessaoExpirada();
     }
 
     const mensagens = normalizarMensagensErro(dadosErro?.message);

@@ -1,4 +1,4 @@
-import { AppProviders } from "@/app/services/providers/AppProviders";
+import { AppProviders } from "@/app/providers/AppProviders";
 import "@/app/styles/globals.css";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";

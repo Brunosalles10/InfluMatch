@@ -1,5 +1,7 @@
+import { AuthProvider } from "@/app/contexts/AuthProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { BrowserRouter } from "react-router";
 import { Toaster } from "sonner";
 
 const queryClient = new QueryClient({
@@ -19,7 +21,9 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <BrowserRouter>
+        <AuthProvider>{children}</AuthProvider>
+      </BrowserRouter>
 
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
