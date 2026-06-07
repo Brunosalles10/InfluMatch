@@ -80,4 +80,6 @@ export const filtroBuscaHomeSchema = z.object({
   tipoConteudo: tipoConteudoSchema,
 });
 
-export type DadosFiltroBuscaHome = z.infer<typeof filtroBuscaHomeSchema>;
+export type EntradaFiltroBuscaHome = z.input<typeof filtroBuscaHomeSchema>;
+
+export type DadosFiltroBuscaHome = z.output<typeof filtroBuscaHomeSchema>;
