@@ -69,7 +69,11 @@ export const filtroRankingInfluenciadoresSchema = z.object({
   limit: limitSchema,
 });
 
-export type DadosFiltroRankingInfluenciadores = z.infer<
+export type EntradaFiltroRankingInfluenciadores = z.input<
+  typeof filtroRankingInfluenciadoresSchema
+>;
+
+export type DadosFiltroRankingInfluenciadores = z.output<
   typeof filtroRankingInfluenciadoresSchema
 >;
 

@@ -57,4 +57,7 @@ export type RankingInfluenciador = {
   visualizacoes?: number;
   quantidadeConteudos?: number;
   taxaEngajamento?: number;
+
+  mediaVisualizacoesPorConteudo?: number | null;
+  crescimentoPercentual?: number | null;
 };

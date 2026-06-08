@@ -1,8 +1,8 @@
+import { CriadoresPage } from "@/app/features/criadores/pages/CriadoresPage";
 import { HomePage } from "@/app/features/home/pages/HomePage";
 import { PaginaTemporaria } from "@/app/features/home/pages/PaginaTemporaria";
 import { PublicLayout } from "@/app/layouts/PublicLayout";
 import { CadastroPage } from "@/app/pages/CadastroPage";
-import { CriadoresPage } from "@/app/pages/CriadoresPage";
 import { LoginPage } from "@/app/pages/LoginPage";
 import { PerfilPage } from "@/app/pages/PerfilPage";
 import { VideosViraisPage } from "@/app/pages/VideosViraisPage";
