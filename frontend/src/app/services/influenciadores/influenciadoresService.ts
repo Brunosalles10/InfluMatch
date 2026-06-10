@@ -1,11 +1,8 @@
 import type {
   ParametrosPaginacao,
   RespostaPaginada,
-} from "@/app/services/types/api.types";
-import type {
-  Influenciador,
-  Plataforma,
-} from "@/app/services/types/dominio.types";
+} from "@/app/types/api.types";
+import type { Influenciador, Plataforma } from "@/app/types/dominio.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 export type FiltrosInfluenciadores = ParametrosPaginacao & {

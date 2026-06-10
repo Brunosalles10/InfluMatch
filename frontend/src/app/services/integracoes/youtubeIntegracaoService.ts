@@ -1,7 +1,7 @@
 import type {
   ColetarYoutubeDto,
   ResumoColetaYoutube,
-} from "@/app/services/types/youtube.types";
+} from "@/app/types/youtube.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 class YoutubeIntegracaoService extends ServicoApiBase {

@@ -1,4 +1,4 @@
-import type { RankingInfluenciador } from "@/app/services/types/ranking.types";
+import type { RankingInfluenciador } from "@/app/types/ranking.types";
 import { calcularPosicaoRanking } from "../utils/criadores.helpers";
 import { CriadorRankingCard } from "./CriadorRankingCard";
 

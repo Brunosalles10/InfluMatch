@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/components/ui/Table";
-import type { RankingInfluenciador } from "@/app/services/types/ranking.types";
+import type { RankingInfluenciador } from "@/app/types/ranking.types";
 import {
   formatarNumeroCompacto,
   formatarPercentual,

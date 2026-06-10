@@ -9,7 +9,7 @@ import { mapearColetaYoutubeParaDto } from "@/app/mappers/youtube.mapper";
 import type { DadosColetaYoutube } from "@/app/schemas";
 import { ErroApi } from "@/app/services/api/ErroApi";
 import { youtubeIntegracaoService } from "@/app/services/integracoes/youtubeIntegracaoService";
-import type { ResumoColetaYoutube } from "@/app/services/types/youtube.types";
+import type { ResumoColetaYoutube } from "@/app/types/youtube.types";
 import { ColetaYoutubeForm } from "../components/ColetaYoutubeForm";
 import { ResumoColetaYoutubeCard } from "../components/ResumoColetaYoutubeCard";
 

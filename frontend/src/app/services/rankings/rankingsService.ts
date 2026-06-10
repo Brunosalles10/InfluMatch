@@ -1,10 +1,10 @@
-import type { RespostaPaginada } from "@/app/services/types/api.types";
+import type { RespostaPaginada } from "@/app/types/api.types";
 import type {
   FiltrosRankingConteudos,
   FiltrosRankingInfluenciadores,
   RankingConteudo,
   RankingInfluenciador,
-} from "@/app/services/types/ranking.types";
+} from "@/app/types/ranking.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 class RankingsService extends ServicoApiBase {

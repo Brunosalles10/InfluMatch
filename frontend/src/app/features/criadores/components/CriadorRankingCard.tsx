@@ -1,7 +1,7 @@
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
-import type { RankingInfluenciador } from "@/app/services/types/ranking.types";
+import type { RankingInfluenciador } from "@/app/types/ranking.types";
 import {
   formatarNumeroCompacto,
   formatarPercentual,

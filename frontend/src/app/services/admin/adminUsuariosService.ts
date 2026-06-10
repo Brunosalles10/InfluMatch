@@ -1,8 +1,8 @@
 import type {
   ParametrosPaginacao,
   RespostaPaginada,
-} from "@/app/services/types/api.types";
-import type { Usuario } from "@/app/services/types/usuario.types";
+} from "@/app/types/api.types";
+import type { Usuario } from "@/app/types/usuario.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 export type AtualizarUsuarioAdminDto = {

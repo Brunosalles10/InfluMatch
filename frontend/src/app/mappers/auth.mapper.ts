@@ -7,7 +7,7 @@ import type {
   AlterarSenhaDto,
   CadastroUsuarioDto,
   LoginDto,
-} from "@/app/services/types/auth.types";
+} from "@/app/types/auth.types";
 
 export function mapearLoginParaDto(dados: DadosLogin): LoginDto {
   return {

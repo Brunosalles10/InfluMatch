@@ -1,12 +1,12 @@
 import type {
   ParametrosPaginacao,
   RespostaPaginada,
-} from "@/app/services/types/api.types";
+} from "@/app/types/api.types";
 import type {
   Conteudo,
   Plataforma,
   TipoConteudo,
-} from "@/app/services/types/dominio.types";
+} from "@/app/types/dominio.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 export type FiltrosConteudos = ParametrosPaginacao & {

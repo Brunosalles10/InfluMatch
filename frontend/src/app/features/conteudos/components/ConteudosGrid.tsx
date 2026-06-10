@@ -1,4 +1,4 @@
-import type { RankingConteudo } from "@/app/services/types/ranking.types";
+import type { RankingConteudo } from "@/app/types/ranking.types";
 import { calcularPosicaoConteudo } from "../utils/conteudos.helpers";
 import { ConteudoViralCard } from "./ConteudoViralCard";
 

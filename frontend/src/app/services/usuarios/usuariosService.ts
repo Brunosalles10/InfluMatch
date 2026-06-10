@@ -1,5 +1,5 @@
-import type { AlterarSenhaDto } from "@/app/services/types/auth.types";
-import type { Usuario } from "@/app/services/types/usuario.types";
+import type { AlterarSenhaDto } from "@/app/types/auth.types";
+import type { Usuario } from "@/app/types/usuario.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 export type AtualizarMinhaContaDto = {

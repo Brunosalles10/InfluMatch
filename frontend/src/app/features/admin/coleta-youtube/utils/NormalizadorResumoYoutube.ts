@@ -1,4 +1,4 @@
-import type { ResumoColetaYoutube } from "@/app/services/types/youtube.types";
+import type { ResumoColetaYoutube } from "@/app/types/youtube.types";
 
 type ResumoNormalizado = {
   videosEncontrados: number | null;

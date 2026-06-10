@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/Card";
-import type { ResumoColetaYoutube } from "@/app/services/types/youtube.types";
+import type { ResumoColetaYoutube } from "@/app/types/youtube.types";
 import { NormalizadorResumoYoutube } from "../utils/NormalizadorResumoYoutube";
 
 type ResumoColetaYoutubeCardProps = {

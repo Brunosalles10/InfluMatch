@@ -1,8 +1,8 @@
-import type { ErroBackend } from "@/app/services/types/api.types";
 import {
   obterTokenAutenticacao,
   removerTokenAutenticacao,
 } from "@/app/services/utils/authStorage";
+import type { ErroBackend } from "@/app/types/api.types";
 import { emitirEventoSessaoExpirada } from "@/app/utils/eventosAutenticacao";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { ErroApi } from "./ErroApi";

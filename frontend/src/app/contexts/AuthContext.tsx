@@ -1,5 +1,5 @@
 import type { DadosCadastro, DadosLogin } from "@/app/schemas";
-import type { Usuario } from "@/app/services/types/usuario.types";
+import type { Usuario } from "@/app/types/usuario.types";
 import { createContext } from "react";
 
 export type AuthContextData = {

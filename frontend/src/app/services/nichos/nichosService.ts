@@ -1,4 +1,4 @@
-import type { Nicho } from "@/app/services/types/dominio.types";
+import type { Nicho } from "@/app/types/dominio.types";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
 class NichosService extends ServicoApiBase {

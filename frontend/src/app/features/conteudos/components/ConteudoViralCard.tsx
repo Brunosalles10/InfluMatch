@@ -10,7 +10,7 @@ import {
 
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
-import type { RankingConteudo } from "@/app/services/types/ranking.types";
+import type { RankingConteudo } from "@/app/types/ranking.types";
 import {
   formatarNumeroCompacto,
   formatarPercentual,

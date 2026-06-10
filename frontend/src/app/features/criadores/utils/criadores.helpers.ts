@@ -1,4 +1,4 @@
-import type { RespostaPaginada } from "@/app/services/types/api.types";
+import type { RespostaPaginada } from "@/app/types/api.types";
 
 export function calcularPosicaoRanking(
   indice: number,

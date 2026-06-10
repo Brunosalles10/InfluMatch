@@ -1,13 +1,13 @@
-import type {
-  CadastroUsuarioDto,
-  LoginDto,
-  RespostaLogin,
-} from "@/app/services/types/auth.types";
-import type { Usuario } from "@/app/services/types/usuario.types";
 import {
   removerTokenAutenticacao,
   salvarTokenAutenticacao,
 } from "@/app/services/utils/authStorage";
+import type {
+  CadastroUsuarioDto,
+  LoginDto,
+  RespostaLogin,
+} from "@/app/types/auth.types";
+import type { Usuario } from "@/app/types/usuario.types";
 import { ErroApi } from "../api/ErroApi";
 import { ServicoApiBase } from "../api/ServicoApiBase";
 
