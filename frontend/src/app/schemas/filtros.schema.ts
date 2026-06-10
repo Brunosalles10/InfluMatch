@@ -56,7 +56,11 @@ export const filtroRankingConteudosSchema = z.object({
   limit: limitSchema,
 });
 
-export type DadosFiltroRankingConteudos = z.infer<
+export type EntradaFiltroRankingConteudos = z.input<
+  typeof filtroRankingConteudosSchema
+>;
+
+export type DadosFiltroRankingConteudos = z.output<
   typeof filtroRankingConteudosSchema
 >;
 

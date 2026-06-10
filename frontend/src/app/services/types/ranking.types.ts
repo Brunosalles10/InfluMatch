@@ -33,16 +33,21 @@ export type RankingConteudo = {
   titulo: string;
   plataforma: Plataforma;
   tipoConteudo: TipoConteudo;
+
   thumbnailUrl?: string | null;
   urlOriginal?: string | null;
-  nomeCriador?: string;
-  usernameCriador?: string;
-  nicho?: string;
-  visualizacoes?: number;
-  curtidas?: number;
-  comentarios?: number;
-  compartilhamentos?: number;
-  taxaEngajamento?: number;
+
+  nomeCriador?: string | null;
+  usernameCriador?: string | null;
+
+  nicho?: string | null;
+
+  visualizacoes?: number | null;
+  curtidas?: number | null;
+  comentarios?: number | null;
+  compartilhamentos?: number | null;
+  taxaEngajamento?: number | null;
+
   publicadoEm?: string | null;
 };
 

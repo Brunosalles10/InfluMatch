@@ -1,11 +1,12 @@
+import { ColetaYoutubePage } from "@/app/features/admin/coleta-youtube/pages/ColetaYoutubePage";
+import { VideosViraisPage } from "@/app/features/conteudos/pages/VideosViraisPage";
 import { CriadoresPage } from "@/app/features/criadores/pages/CriadoresPage";
 import { HomePage } from "@/app/features/home/pages/HomePage";
-import { PaginaTemporaria } from "@/app/features/home/pages/PaginaTemporaria";
+import { PrecosPage } from "@/app/features/precos/pages/PrecosPage";
 import { PublicLayout } from "@/app/layouts/PublicLayout";
 import { CadastroPage } from "@/app/pages/CadastroPage";
 import { LoginPage } from "@/app/pages/LoginPage";
 import { PerfilPage } from "@/app/pages/PerfilPage";
-import { VideosViraisPage } from "@/app/pages/VideosViraisPage";
 import { Route, Routes } from "react-router";
 import { RotaAdmin } from "./RotaAdmin";
 import { RotaPrivada } from "./RotaPrivada";
@@ -20,15 +21,7 @@ export function AppRoutes() {
 
         <Route path="/videos-virais" element={<VideosViraisPage />} />
 
-        <Route
-          path="/precos"
-          element={
-            <PaginaTemporaria
-              titulo="Planos e Preços"
-              descricao="Página de preços planejada para a próxima fase visual do projeto."
-            />
-          }
-        />
+        <Route path="/precos" element={<PrecosPage />} />
       </Route>
 
       <Route path="/login" element={<LoginPage />} />
@@ -40,15 +33,7 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<RotaAdmin />}>
-        <Route
-          path="/admin"
-          element={
-            <PaginaTemporaria
-              titulo="Área Administrativa"
-              descricao="Painel administrativo para coleta e gestão de dados."
-            />
-          }
-        />
+        <Route path="/admin/coleta-youtube" element={<ColetaYoutubePage />} />
       </Route>
     </Routes>
   );

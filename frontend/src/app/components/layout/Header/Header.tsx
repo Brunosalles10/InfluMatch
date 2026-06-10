@@ -12,7 +12,7 @@ const itensNavegacao = [
 ];
 
 export function Header() {
-  const { autenticado, usuario, logout } = useAuth();
+  const { autenticado, usuario, usuarioAdmin, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -52,6 +52,14 @@ export function Header() {
         <div className="flex items-center gap-3">
           {autenticado ? (
             <>
+              {usuarioAdmin && (
+                <Link
+                  to="/admin/coleta-youtube"
+                  className="hidden rounded-xl border border-secondary/40 px-4 py-2 text-sm font-semibold text-secondary-hover transition-colors hover:bg-secondary/10 sm:inline-flex"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/perfil"
                 className="hidden rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary sm:inline-flex"
