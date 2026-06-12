@@ -12,7 +12,7 @@ import type {
 export function mapearLoginParaDto(dados: DadosLogin): LoginDto {
   return {
     email: dados.email,
-    senha: dados.senha,
+    password: dados.senha,
   };
 }
 
@@ -22,7 +22,7 @@ export function mapearCadastroParaDto(
   return {
     nome: dados.nome,
     email: dados.email,
-    senha: dados.senha,
+    password: dados.senha,
   };
 }
 

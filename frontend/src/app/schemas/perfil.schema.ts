@@ -12,4 +12,6 @@ export const atualizarPerfilSchema = z
     path: ["nome"],
   });
 
-export type DadosAtualizarPerfil = z.infer<typeof atualizarPerfilSchema>;
+export type EntradaAtualizarPerfil = z.input<typeof atualizarPerfilSchema>;
+
+export type DadosAtualizarPerfil = z.output<typeof atualizarPerfilSchema>;

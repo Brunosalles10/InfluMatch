@@ -1,4 +1,4 @@
-import { AppRoutes } from "@/app/pages/AppRoutes";
+import { AppRoutes } from "@/app/routes/AppRoutes";
 
 export default function App() {
   return <AppRoutes />;

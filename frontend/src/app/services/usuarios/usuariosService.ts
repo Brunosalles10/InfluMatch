@@ -12,8 +12,11 @@ class UsuariosService extends ServicoApiBase {
     return this.buscar<Usuario>("/users/profile");
   }
 
-  async atualizarMinhaConta(dados: AtualizarMinhaContaDto) {
-    return this.atualizar<Usuario, AtualizarMinhaContaDto>("/users/me", dados);
+  async atualizarMinhaConta(id: string, dados: AtualizarMinhaContaDto) {
+    return this.atualizar<Usuario, AtualizarMinhaContaDto>(
+      `/users/${id}`,
+      dados,
+    );
   }
 
   async alterarMinhaSenha(dados: AlterarSenhaDto) {

@@ -11,7 +11,7 @@ export const coletaYoutubeSchema = z.object({
     "Quantidade de resultados",
     10,
     1,
-    50,
+    25,
   ),
 });
 

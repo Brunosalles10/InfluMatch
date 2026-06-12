@@ -57,7 +57,7 @@ export function ColetaYoutubeForm({
             label="Quantidade de resultados"
             type="number"
             min={1}
-            max={50}
+            max={25}
             erro={errors.quantidadeResultados?.message}
             {...register("quantidadeResultados")}
           />
