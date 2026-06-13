@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { LIMITE_MAXIMO, TAMANHO_MINIMO_SENHA } from "./constantesValidacao";
+import {
+  LIMITE_MAXIMO,
+  TAMANHO_MAXIMO_SENHA,
+  TAMANHO_MINIMO_SENHA,
+} from "./constantesValidacao";
 
 export function normalizarTextoOpcional(valor: unknown) {
   if (typeof valor !== "string") {
@@ -116,4 +120,8 @@ export const senhaForteSchema = z
   .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula.")
   .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula.")
   .regex(/[0-9]/, "Senha deve conter pelo menos um número.")
+  .max(
+    TAMANHO_MAXIMO_SENHA,
+    `Senha deve ter no máximo ${TAMANHO_MAXIMO_SENHA} caracteres.`,
+  )
   .regex(/[^A-Za-z0-9]/, "Senha deve conter pelo menos um caractere especial.");

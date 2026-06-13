@@ -11,10 +11,7 @@ import {
 import type { DadosCadastro, DadosLogin } from "@/app/schemas";
 import { authService } from "@/app/services/auth/authService";
 import { usuariosService } from "@/app/services/usuarios/usuariosService";
-import {
-  existeTokenAutenticacao,
-  removerTokenAutenticacao,
-} from "@/app/services/utils/authStorage";
+import { existeTokenAutenticacao } from "@/app/services/utils/authStorage";
 import { ouvirEventoSessaoExpirada } from "@/app/utils/eventosAutenticacao";
 
 const CHAVE_QUERY_USUARIO = ["usuario-logado"];
@@ -47,7 +44,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const limparSessao = useCallback(() => {
     authService.logout();
-    removerTokenAutenticacao();
     queryClient.removeQueries({ queryKey: CHAVE_QUERY_USUARIO });
   }, [queryClient]);
 

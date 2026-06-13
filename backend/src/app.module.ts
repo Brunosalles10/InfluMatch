@@ -13,9 +13,9 @@ import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     PrismaModule,
-    ConfigModule.forRoot({ isGlobal: true }),
     RedisModule,
     AuthModule,
     NichosModule,

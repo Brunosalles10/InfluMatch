@@ -31,6 +31,7 @@ export class RankingsRepository {
     const { plataforma, tipoConteudo, nicho, busca, ordenarPor, page, limit } =
       params;
     const skip = (page - 1) * limit;
+    const nichoSlug = nicho ? this.normalizarSlug(nicho) : undefined;
 
     const where: Prisma.ConteudoWhereInput = {
       ...(plataforma ? { plataforma } : {}),
@@ -54,7 +55,7 @@ export class RankingsRepository {
             perfilSocial: {
               influenciador: {
                 nicho: {
-                  slug: nicho,
+                  OR: [{ slug: nichoSlug }, { nome: { contains: nicho } }],
                 },
               },
             },
@@ -87,6 +88,7 @@ export class RankingsRepository {
   async listarInfluenciadores(params: RankingInfluenciadoresParams) {
     const { plataforma, nicho, busca, ordenarPor, page, limit } = params;
     const skip = (page - 1) * limit;
+    const nichoSlug = nicho ? this.normalizarSlug(nicho) : undefined;
 
     const where: Prisma.PerfilSocialWhereInput = {
       ...(plataforma ? { plataforma } : {}),
@@ -103,7 +105,7 @@ export class RankingsRepository {
         ? {
             influenciador: {
               nicho: {
-                slug: nicho,
+                OR: [{ slug: nichoSlug }, { nome: { contains: nicho } }],
               },
             },
           }
@@ -184,5 +186,15 @@ export class RankingsRepository {
       default:
         return [{ totalSeguidores: 'desc' }, { totalVisualizacoes: 'desc' }];
     }
+  }
+
+  private normalizarSlug(valor: string) {
+    return valor
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
   }
 }

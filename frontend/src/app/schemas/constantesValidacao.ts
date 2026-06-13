@@ -1,6 +1,7 @@
 export const TAMANHO_MINIMO_SENHA = 8;
+export const TAMANHO_MAXIMO_SENHA = 20;
 
-export const TAMANHO_MAXIMO_NOME = 80;
+export const TAMANHO_MAXIMO_NOME = 50;
 export const TAMANHO_MAXIMO_BUSCA = 100;
 export const TAMANHO_MAXIMO_NICHO = 60;
 

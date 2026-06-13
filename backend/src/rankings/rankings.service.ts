@@ -49,6 +49,8 @@ export class RankingsService {
       limit,
     });
 
+    const totalPages = Math.ceil(result.total / limit);
+
     const response = {
       data: result.data.map((conteudo, index) =>
         RankingConteudoMapper.paraResposta(
@@ -58,7 +60,9 @@ export class RankingsService {
       ),
       total: result.total,
       page,
-      lastPage: Math.ceil(result.total / limit),
+      limit,
+      totalPages,
+      lastPage: totalPages,
     };
 
     await this.cacheService.set(cacheKey, response, this.ttlRankingSegundos);
@@ -115,11 +119,15 @@ export class RankingsService {
       });
     }
 
+    const totalPages = Math.ceil(result.total / limit);
+
     const response = {
       data,
       total: result.total,
       page,
-      lastPage: Math.ceil(result.total / limit),
+      limit,
+      totalPages,
+      lastPage: totalPages,
     };
 
     await this.cacheService.set(cacheKey, response, this.ttlRankingSegundos);

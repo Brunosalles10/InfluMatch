@@ -31,7 +31,9 @@ export class YoutubeMapper {
 
     return {
       plataforma: Plataforma.YOUTUBE,
-      tipoConteudo: this.identificarTipoConteudo(video.contentDetails?.duration),
+      tipoConteudo: this.identificarTipoConteudo(
+        video.contentDetails?.duration,
+      ),
       identificadorExterno: video.id,
       titulo: video.snippet?.title?.trim() || 'Vídeo sem título',
       descricao: video.snippet?.description ?? null,
@@ -45,7 +47,9 @@ export class YoutubeMapper {
         totalComentarios,
         totalViews,
       ),
-      publicadoEm: video.snippet?.publishedAt ? new Date(video.snippet.publishedAt) : null,
+      publicadoEm: video.snippet?.publishedAt
+        ? new Date(video.snippet.publishedAt)
+        : null,
     };
   }
 
@@ -102,7 +106,12 @@ export class YoutubeMapper {
 
   private paraBigInt(valor?: string): bigint {
     if (!valor) return 0n;
-    return BigInt(valor);
+
+    try {
+      return BigInt(valor);
+    } catch {
+      return 0n;
+    }
   }
 
   private paraNumero(valor?: string): number {

@@ -5,6 +5,7 @@ export type Usuario = {
   nome: string;
   email: string;
   role: RoleUsuario;
+  ativo?: boolean;
   criadoEm?: string;
   atualizadoEm?: string;
 };
