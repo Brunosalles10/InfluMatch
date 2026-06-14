@@ -23,6 +23,10 @@ export function AppRoutes() {
 
         <Route path="/precos" element={<PrecosPage />} />
 
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route path="/cadastro" element={<CadastroPage />} />
+
         <Route element={<RotaPrivada />}>
           <Route path="/perfil" element={<PerfilPage />} />
         </Route>
@@ -31,10 +35,6 @@ export function AppRoutes() {
           <Route path="/admin/coleta-youtube" element={<ColetaYoutubePage />} />
         </Route>
       </Route>
-
-      <Route path="/login" element={<LoginPage />} />
-
-      <Route path="/cadastro" element={<CadastroPage />} />
     </Routes>
   );
 }

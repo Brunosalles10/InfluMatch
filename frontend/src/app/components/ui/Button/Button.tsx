@@ -4,7 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 const variantesBotao = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60",
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60",
   {
     variants: {
       variante: {
