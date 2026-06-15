@@ -1,75 +1,56 @@
 import type { ResumoColetaYoutube } from "@/app/types/youtube.types";
 
-type ResumoNormalizado = {
-  videosEncontrados: number | null;
-  canaisProcessados: number | null;
-  influenciadoresCriados: number | null;
-  influenciadoresAtualizados: number | null;
-  conteudosCriados: number | null;
-  conteudosAtualizados: number | null;
-  erros: string[];
+export type ResumoYoutubeNormalizado = {
+  mensagem: string;
+  plataforma: string;
+  nichoNome: string;
+  nichoSlug: string;
+  totalVideosEncontrados: number;
+  totalCanaisProcessados: number;
+  totalConteudosProcessados: number;
+  retornadoDoCache: boolean;
+  statusLabel: string;
+  atualizadoEmFormatado: string;
 };
 
 export class NormalizadorResumoYoutube {
-  static normalizar(resumo: ResumoColetaYoutube): ResumoNormalizado {
+  static normalizar(resumo: ResumoColetaYoutube): ResumoYoutubeNormalizado {
     return {
-      videosEncontrados: this.obterNumero(resumo, [
-        "videosEncontrados",
-        "quantidadeVideosEncontrados",
-        "totalVideosEncontrados",
-      ]),
-      canaisProcessados: this.obterNumero(resumo, [
-        "canaisProcessados",
-        "quantidadeCanaisProcessados",
-        "totalCanaisProcessados",
-      ]),
-      influenciadoresCriados: this.obterNumero(resumo, [
-        "influenciadoresCriados",
-        "quantidadeInfluenciadoresCriados",
-      ]),
-      influenciadoresAtualizados: this.obterNumero(resumo, [
-        "influenciadoresAtualizados",
-        "quantidadeInfluenciadoresAtualizados",
-      ]),
-      conteudosCriados: this.obterNumero(resumo, [
-        "conteudosCriados",
-        "quantidadeConteudosCriados",
-      ]),
-      conteudosAtualizados: this.obterNumero(resumo, [
-        "conteudosAtualizados",
-        "quantidadeConteudosAtualizados",
-      ]),
-      erros: this.obterErros(resumo),
+      mensagem: resumo.mensagem,
+      plataforma: this.formatarPlataforma(resumo.plataforma),
+      nichoNome: resumo.nicho.nome,
+      nichoSlug: resumo.nicho.slug,
+      totalVideosEncontrados: resumo.totalVideosEncontrados,
+      totalCanaisProcessados: resumo.totalCanaisProcessados,
+      totalConteudosProcessados: resumo.totalConteudosProcessados,
+      retornadoDoCache: resumo.retornadoDoCache,
+      statusLabel: resumo.retornadoDoCache
+        ? "Retornado do cache"
+        : "Nova coleta",
+      atualizadoEmFormatado: this.formatarDataHora(resumo.atualizadoEm),
     };
   }
 
-  private static obterNumero(resumo: ResumoColetaYoutube, chaves: string[]) {
-    for (const chave of chaves) {
-      const valor = resumo[chave];
+  private static formatarPlataforma(
+    plataforma: ResumoColetaYoutube["plataforma"],
+  ) {
+    const labels: Record<ResumoColetaYoutube["plataforma"], string> = {
+      YOUTUBE: "YouTube",
+    };
 
-      if (typeof valor === "number") {
-        return valor;
-      }
-
-      if (typeof valor === "string" && valor.trim() !== "") {
-        const numero = Number(valor);
-
-        if (Number.isFinite(numero)) {
-          return numero;
-        }
-      }
-    }
-
-    return null;
+    return labels[plataforma];
   }
 
-  private static obterErros(resumo: ResumoColetaYoutube) {
-    if (Array.isArray(resumo.erros)) {
-      return resumo.erros.filter(
-        (erro): erro is string => typeof erro === "string",
-      );
+  private static formatarDataHora(dataIso: string) {
+    const data = new Date(dataIso);
+
+    if (Number.isNaN(data.getTime())) {
+      return "Não disponível";
     }
 
-    return [];
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(data);
   }
 }
