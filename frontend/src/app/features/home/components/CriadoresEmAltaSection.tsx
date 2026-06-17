@@ -51,7 +51,7 @@ export function CriadoresEmAltaSection() {
       {!isLoading && !isError && criadores.length === 0 && (
         <EmptyState
           titulo="Nenhum criador encontrado"
-          descricao="Execute uma coleta no painel administrativo ou ajuste os filtros depois."
+          descricao="Ajustes os filtros para encontrar criadores que atendam aos critérios."
         />
       )}
 

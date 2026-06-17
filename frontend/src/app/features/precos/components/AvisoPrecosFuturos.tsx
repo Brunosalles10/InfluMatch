@@ -16,9 +16,8 @@ export function AvisoPrecosFuturos() {
 
           <p className="mt-2 leading-7 text-text-secondary">
             O InfluMatch ainda não possui módulo de pagamentos, assinaturas ou
-            planos comerciais implementados no backend. Esta tela existe para
-            demonstrar uma possibilidade de evolução do produto e manter
-            coerência com o protótipo da aplicação.
+            planos comerciais. Esta tela existe para demonstrar uma
+            possibilidade de evolução do produto.
           </p>
         </div>
       </div>

@@ -16,9 +16,8 @@ export function PrecosHeroSection() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-text-secondary">
-          Nesta versão do TCC, a página de preços é ilustrativa. A estrutura foi
-          planejada para representar uma evolução futura com assinaturas,
-          recursos avançados e planos corporativos.
+          Essa estrutura foi planejada para representar uma evolução futura com
+          assinaturas, recursos avançados e planos corporativos.
         </p>
       </div>
     </section>
