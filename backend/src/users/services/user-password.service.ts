@@ -8,19 +8,18 @@ export class UserPasswordService {
   private readonly saltRounds: number;
 
   constructor(private readonly configService: ConfigService) {
-    const envSalt = this.configService.get('BCRYPT_SALT_ROUNDS');
-    const parsedSalt = parseInt(envSalt, 10);
+    const envSalt = this.configService.get<string>('BCRYPT_SALT_ROUNDS');
 
-    this.saltRounds = isNaN(parsedSalt) ? 12 : parsedSalt;
+    this.saltRounds = envSalt ? Number(envSalt) : 12;
 
     this.logger.log(`BCRYPT_SALT_ROUNDS configurado em: ${this.saltRounds}`);
   }
 
-  hash(password: string): Promise<string> {
+  async hash(password: string): Promise<string> {
     return bcrypt.hash(password, this.saltRounds);
   }
 
-  compare(password: string, hashedPassword: string): Promise<boolean> {
+  async compare(password: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
 }
