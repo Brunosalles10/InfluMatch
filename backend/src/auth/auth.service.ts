@@ -14,7 +14,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  //valida o usuário pelo email e senha
   async validateUser(
     email: string,
     password: string,
