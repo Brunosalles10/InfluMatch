@@ -25,7 +25,7 @@ export class YoutubeController {
 
   @Post('coletar')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'USER')
   @HttpCode(HttpStatus.OK)
   coletarPorNicho(
     @Body() dto: ColetarYoutubeDto,

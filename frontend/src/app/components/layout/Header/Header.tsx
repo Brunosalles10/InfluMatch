@@ -9,6 +9,7 @@ const itensNavegacao = [
   { label: "Criadores", to: "/criadores" },
   { label: "Vídeos Virais", to: "/videos-virais" },
   { label: "Preços", to: "/precos" },
+  { label: "Contato", to: "/contato-comercial" },
 ];
 
 export function Header() {
