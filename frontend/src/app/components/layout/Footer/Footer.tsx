@@ -47,8 +47,9 @@ export function Footer() {
           </h3>
 
           <p className="mt-4 text-sm leading-6 text-text-muted">
-            Desenvolvido como sistema de TCC usando React, TypeScript, NestJS,
-            Prisma, MySQL, Redis e Docker.
+            Projeto de conclusão de curso desenvolvido com React, TypeScript e
+            Tailwind CSS, utilizando dados publicos para análise de
+            influenciadores e tendências de conteúdo.
           </p>
         </div>
       </div>

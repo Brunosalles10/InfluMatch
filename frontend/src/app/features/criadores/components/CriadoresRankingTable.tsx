@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/app/components/ui/Table";
+} from "@/app/components/ui/Table/Table";
 import type { RankingInfluenciador } from "@/app/types/ranking.types";
 import {
   formatarNumeroCompacto,

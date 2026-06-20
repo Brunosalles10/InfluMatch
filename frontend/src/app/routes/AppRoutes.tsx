@@ -1,4 +1,5 @@
 import { ColetaYoutubePage } from "@/app/features/admin/coleta-youtube/pages/ColetaYoutubePage";
+import { ContatoComercialPage } from "@/app/features/contato-comercial/pages/ContatoComercialPage";
 import { VideosViraisPage } from "@/app/features/conteudos/pages/VideosViraisPage";
 import { CriadoresPage } from "@/app/features/criadores/pages/CriadoresPage";
 import { HomePage } from "@/app/features/home/pages/HomePage";
@@ -23,6 +24,12 @@ export function AppRoutes() {
 
         <Route path="/precos" element={<PrecosPage />} />
 
+        <Route path="/contato-comercial" element={<ContatoComercialPage />} />
+
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route path="/cadastro" element={<CadastroPage />} />
+
         <Route element={<RotaPrivada />}>
           <Route path="/perfil" element={<PerfilPage />} />
         </Route>
@@ -31,10 +38,6 @@ export function AppRoutes() {
           <Route path="/admin/coleta-youtube" element={<ColetaYoutubePage />} />
         </Route>
       </Route>
-
-      <Route path="/login" element={<LoginPage />} />
-
-      <Route path="/cadastro" element={<CadastroPage />} />
     </Routes>
   );
 }

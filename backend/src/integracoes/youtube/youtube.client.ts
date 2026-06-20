@@ -64,7 +64,7 @@ export class YoutubeClient {
             relevanceLanguage:
               this.configService.get<string>('YOUTUBE_RELEVANCE_LANGUAGE') ??
               'pt',
-            safeSearch: 'none',
+            safeSearch: 'moderate',
           },
         }),
       );

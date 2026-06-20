@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 import { Badge } from "@/app/components/ui/Badge";
 import {
@@ -18,7 +18,6 @@ export function ResumoColetaYoutubeCard({
   resumo,
 }: ResumoColetaYoutubeCardProps) {
   const resumoNormalizado = NormalizadorResumoYoutube.normalizar(resumo);
-  const possuiErros = resumoNormalizado.erros.length > 0;
 
   return (
     <Card className="border-success/30 bg-success/5">
@@ -29,61 +28,64 @@ export function ResumoColetaYoutubeCard({
             Resumo da coleta
           </CardTitle>
 
-          <Badge variante={possuiErros ? "warning" : "success"}>
-            {possuiErros ? "Concluída com avisos" : "Concluída"}
+          <Badge
+            variante={
+              resumoNormalizado.retornadoDoCache ? "primary" : "success"
+            }
+          >
+            {resumoNormalizado.statusLabel}
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {resumo.mensagem && (
-          <p className="text-sm text-text-secondary">{resumo.mensagem}</p>
-        )}
+        <p className="text-sm text-text-secondary">
+          {resumoNormalizado.mensagem}
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <InformacaoResumo
+            titulo="Plataforma"
+            valor={resumoNormalizado.plataforma}
+          />
+
+          <InformacaoResumo
+            titulo="Nicho"
+            valor={resumoNormalizado.nichoNome}
+          />
+
+          <InformacaoResumo
+            titulo="Slug do nicho"
+            valor={resumoNormalizado.nichoSlug}
+          />
+
+          <InformacaoResumo
+            titulo="Atualizado em"
+            valor={resumoNormalizado.atualizadoEmFormatado}
+          />
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricaResumo
             titulo="Vídeos encontrados"
-            valor={resumoNormalizado.videosEncontrados}
+            valor={resumoNormalizado.totalVideosEncontrados}
           />
 
           <MetricaResumo
             titulo="Canais processados"
-            valor={resumoNormalizado.canaisProcessados}
+            valor={resumoNormalizado.totalCanaisProcessados}
           />
 
           <MetricaResumo
-            titulo="Influenciadores criados"
-            valor={resumoNormalizado.influenciadoresCriados}
-          />
-
-          <MetricaResumo
-            titulo="Influenciadores atualizados"
-            valor={resumoNormalizado.influenciadoresAtualizados}
-          />
-
-          <MetricaResumo
-            titulo="Conteúdos criados"
-            valor={resumoNormalizado.conteudosCriados}
-          />
-
-          <MetricaResumo
-            titulo="Conteúdos atualizados"
-            valor={resumoNormalizado.conteudosAtualizados}
+            titulo="Conteúdos processados"
+            valor={resumoNormalizado.totalConteudosProcessados}
           />
         </div>
 
-        {possuiErros && (
-          <div className="rounded-2xl border border-warning/30 bg-warning/10 p-4">
-            <div className="mb-3 flex items-center gap-2 text-warning">
-              <AlertTriangle className="h-5 w-5" />
-              <strong>Erros ou avisos da coleta</strong>
-            </div>
-
-            <ul className="space-y-2 text-sm text-text-secondary">
-              {resumoNormalizado.erros.map((erro) => (
-                <li key={erro}>• {erro}</li>
-              ))}
-            </ul>
+        {resumoNormalizado.retornadoDoCache && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm text-text-secondary">
+            Esta resposta veio do cache da última coleta para o mesmo nicho e
+            quantidade de resultados.
           </div>
         )}
       </CardContent>
@@ -91,9 +93,26 @@ export function ResumoColetaYoutubeCard({
   );
 }
 
+type InformacaoResumoProps = {
+  titulo: string;
+  valor: string;
+};
+
+function InformacaoResumo({ titulo, valor }: InformacaoResumoProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface/80 p-4">
+      <span className="text-sm text-text-muted">{titulo}</span>
+
+      <p className="mt-2 break-words text-base font-bold text-text-primary">
+        {valor}
+      </p>
+    </div>
+  );
+}
+
 type MetricaResumoProps = {
   titulo: string;
-  valor: number | null;
+  valor: number;
 };
 
 function MetricaResumo({ titulo, valor }: MetricaResumoProps) {
@@ -101,9 +120,7 @@ function MetricaResumo({ titulo, valor }: MetricaResumoProps) {
     <div className="rounded-2xl border border-border bg-surface/80 p-4">
       <span className="text-sm text-text-muted">{titulo}</span>
 
-      <p className="mt-2 text-2xl font-extrabold text-text-primary">
-        {valor ?? "N/D"}
-      </p>
+      <p className="mt-2 text-2xl font-extrabold text-text-primary">{valor}</p>
     </div>
   );
 }

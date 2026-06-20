@@ -3,24 +3,19 @@ export type ColetarYoutubeDto = {
   quantidadeResultados: number;
 };
 
+export type NichoResumoColetaYoutube = {
+  id: string;
+  nome: string;
+  slug: string;
+};
+
 export type ResumoColetaYoutube = {
-  nicho?: string;
-  plataforma?: "YOUTUBE";
-
-  videosEncontrados?: number;
-  canaisProcessados?: number;
-
-  influenciadoresCriados?: number;
-  influenciadoresAtualizados?: number;
-
-  perfisSociaisCriados?: number;
-  perfisSociaisAtualizados?: number;
-
-  conteudosCriados?: number;
-  conteudosAtualizados?: number;
-
-  erros?: string[];
-  mensagem?: string;
-
-  [chave: string]: unknown;
+  mensagem: string;
+  plataforma: "YOUTUBE";
+  nicho: NichoResumoColetaYoutube;
+  totalVideosEncontrados: number;
+  totalCanaisProcessados: number;
+  totalConteudosProcessados: number;
+  retornadoDoCache: boolean;
+  atualizadoEm: string;
 };
