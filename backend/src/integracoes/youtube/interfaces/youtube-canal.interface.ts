@@ -10,6 +10,7 @@ export interface YoutubeCanalItem {
     title?: string;
     description?: string;
     customUrl?: string;
+    country?: string;
     thumbnails?: YoutubeThumbnails;
   };
   statistics?: {
