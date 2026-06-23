@@ -1,18 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { useSearchParams } from "react-router";
-
 import { EmptyState } from "@/app/components/feedback/EmptyState";
 import { ErrorState } from "@/app/components/feedback/ErrorState";
 import { PageContainer } from "@/app/components/layout/PageContainer";
 import { SectionHeader } from "@/app/components/layout/SectionHeader.tsx";
 import { Spinner } from "@/app/components/ui/Spinner";
+import { useColetaYoutube } from "@/app/hooks/useColetaYoutube";
 import {
   filtroRankingInfluenciadoresSchema,
   type DadosFiltroRankingInfluenciadores,
 } from "@/app/schemas";
 import { rankingsService } from "@/app/services/rankings/rankingsService";
+import { obterTermoColetaYoutube } from "@/app/utils/coletaYoutube";
 import { validarComSchema } from "@/app/utils/validacao";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
 import { CriadoresFiltros } from "../components/CriadoresFiltros";
 import { CriadoresMobileList } from "../components/CriadoresMobileList";
 import { CriadoresRankingTable } from "../components/CriadoresRankingTable";
@@ -22,6 +23,8 @@ import { calcularTotalPaginas } from "../utils/criadores.helpers";
 
 export function CriadoresPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const { coletarPorTermo, coletando } = useColetaYoutube();
 
   const filtrosUrl = useMemo(() => {
     return ConstrutorFiltrosCriadores.extrairFiltrosDaUrl(searchParams);
@@ -59,6 +62,29 @@ export function CriadoresPage() {
         limit: filtros.limit ?? filtrosValidados?.limit ?? 10,
       }),
     );
+  }
+
+  /**
+   * Coleta dados no YouTube e atualiza a consulta com a plataforma correta.
+   */
+  async function buscarNoYoutube(
+    filtros: DadosFiltroRankingInfluenciadores,
+  ): Promise<void> {
+    const termo = obterTermoColetaYoutube({
+      busca: filtros.busca,
+      nicho: filtros.nicho,
+    });
+
+    const coletaConcluida = await coletarPorTermo(termo);
+
+    if (!coletaConcluida) {
+      return;
+    }
+
+    aplicarFiltros({
+      ...filtros,
+      plataforma: "YOUTUBE",
+    });
   }
 
   function limparFiltros() {
@@ -115,7 +141,9 @@ export function CriadoresPage() {
       <CriadoresFiltros
         key={searchParams.toString()}
         filtrosAtuais={filtrosValidados}
+        carregandoBuscaYoutube={coletando}
         aoAplicarFiltros={aplicarFiltros}
+        aoBuscarNoYoutube={buscarNoYoutube}
         aoLimparFiltros={limparFiltros}
       />
 

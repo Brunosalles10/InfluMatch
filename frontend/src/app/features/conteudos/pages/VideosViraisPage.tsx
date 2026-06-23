@@ -1,19 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { useSearchParams } from "react-router";
-
 import { EmptyState } from "@/app/components/feedback/EmptyState";
 import { ErrorState } from "@/app/components/feedback/ErrorState";
 import { PageContainer } from "@/app/components/layout/PageContainer";
 import { SectionHeader } from "@/app/components/layout/SectionHeader.tsx";
 import { Pagination } from "@/app/components/ui/Pagination";
 import { Spinner } from "@/app/components/ui/Spinner";
+import { useColetaYoutube } from "@/app/hooks/useColetaYoutube";
 import {
   filtroRankingConteudosSchema,
   type DadosFiltroRankingConteudos,
 } from "@/app/schemas";
 import { rankingsService } from "@/app/services/rankings/rankingsService";
+import { obterTermoColetaYoutube } from "@/app/utils/coletaYoutube";
 import { validarComSchema } from "@/app/utils/validacao";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
 
 import { ConteudosFiltros } from "../components/ConteudosFiltros";
 import { ConteudosGrid } from "../components/ConteudosGrid";
@@ -22,6 +23,8 @@ import { calcularTotalPaginas } from "../utils/conteudos.helpers";
 
 export function VideosViraisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const { coletarPorTermo, coletando } = useColetaYoutube();
 
   const filtrosUrl = useMemo(() => {
     return ConstrutorFiltrosConteudos.extrairFiltrosDaUrl(searchParams);
@@ -59,6 +62,42 @@ export function VideosViraisPage() {
         limit: filtros.limit ?? filtrosValidados?.limit ?? 10,
       }),
     );
+  }
+
+  /**
+   * Coleta vídeos do YouTube e atualiza os filtros após o processamento.
+   */
+  async function buscarNoYoutube(
+    filtros: DadosFiltroRankingConteudos,
+  ): Promise<void> {
+    const termo = obterTermoColetaYoutube({
+      busca: filtros.busca,
+      nicho: filtros.nicho,
+    });
+
+    const coletaConcluida = await coletarPorTermo(termo);
+
+    if (!coletaConcluida) {
+      return;
+    }
+
+    aplicarFiltros(prepararFiltrosYoutube(filtros));
+  }
+
+  /**
+   * Força a plataforma YouTube e remove tipos incompatíveis com ela.
+   */
+  function prepararFiltrosYoutube(
+    filtros: DadosFiltroRankingConteudos,
+  ): DadosFiltroRankingConteudos {
+    const tipoConteudoValido =
+      filtros.tipoConteudo === "VIDEO" || filtros.tipoConteudo === "SHORT";
+
+    return {
+      ...filtros,
+      plataforma: "YOUTUBE",
+      tipoConteudo: tipoConteudoValido ? filtros.tipoConteudo : undefined,
+    };
   }
 
   function limparFiltros() {
@@ -116,7 +155,9 @@ export function VideosViraisPage() {
       <ConteudosFiltros
         key={searchParams.toString()}
         filtrosAtuais={filtrosValidados}
+        carregandoBuscaYoutube={coletando}
         aoAplicarFiltros={aplicarFiltros}
+        aoBuscarNoYoutube={buscarNoYoutube}
         aoLimparFiltros={limparFiltros}
       />
 
@@ -137,7 +178,7 @@ export function VideosViraisPage() {
       {!isLoading && !isError && conteudos.length === 0 && (
         <EmptyState
           titulo="Nenhum conteúdo encontrado"
-          descricao="Tente alterar os filtros ou execute uma coleta do YouTube no painel administrativo."
+          descricao="Tente alterar os filtros ou buscar novos dados diretamente no YouTube."
           acaoTexto="Limpar filtros"
           onAcao={limparFiltros}
         />

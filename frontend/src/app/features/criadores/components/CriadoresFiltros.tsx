@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Search } from "lucide-react";
+import { Search, Video } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/app/components/ui/Button";
@@ -13,7 +13,11 @@ import {
 
 type CriadoresFiltrosProps = {
   filtrosAtuais: DadosFiltroRankingInfluenciadores;
+  carregandoBuscaYoutube: boolean;
   aoAplicarFiltros: (filtros: DadosFiltroRankingInfluenciadores) => void;
+  aoBuscarNoYoutube: (
+    filtros: DadosFiltroRankingInfluenciadores,
+  ) => Promise<void>;
   aoLimparFiltros: () => void;
 };
 
@@ -31,9 +35,14 @@ const opcoesOrdenacao = [
   { label: "Engajamento", value: "engajamento" },
 ];
 
+/**
+ * Exibe os filtros do banco e a ação explícita de busca no YouTube.
+ */
 export function CriadoresFiltros({
   filtrosAtuais,
+  carregandoBuscaYoutube,
   aoAplicarFiltros,
+  aoBuscarNoYoutube,
   aoLimparFiltros,
 }: CriadoresFiltrosProps) {
   const {
@@ -56,12 +65,33 @@ export function CriadoresFiltros({
     },
   });
 
+  /**
+   * Aplica os filtros consultando somente os dados do banco.
+   */
   function enviarFormulario(dados: DadosFiltroRankingInfluenciadores) {
-    aoAplicarFiltros({
+    aoAplicarFiltros(prepararFiltros(dados));
+  }
+
+  /**
+   * Solicita uma coleta no YouTube usando os filtros preenchidos.
+   */
+  async function buscarNoYoutube(
+    dados: DadosFiltroRankingInfluenciadores,
+  ): Promise<void> {
+    await aoBuscarNoYoutube(prepararFiltros(dados));
+  }
+
+  /**
+   * Reinicia a paginação ao executar uma nova pesquisa.
+   */
+  function prepararFiltros(
+    dados: DadosFiltroRankingInfluenciadores,
+  ): DadosFiltroRankingInfluenciadores {
+    return {
       ...dados,
       page: 1,
       limit: filtrosAtuais.limit,
-    });
+    };
   }
 
   return (
@@ -69,7 +99,7 @@ export function CriadoresFiltros({
       onSubmit={handleSubmit(enviarFormulario)}
       className="rounded-2xl border border-border bg-surface/80 p-4 shadow-card"
     >
-      <div className="grid gap-4 lg:grid-cols-[1fr_180px_180px_180px_auto_auto]">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_180px_180px_180px]">
         <Input
           placeholder="Buscar por nome ou @username..."
           erro={errors.busca?.message}
@@ -94,13 +124,28 @@ export function CriadoresFiltros({
           erro={errors.ordenarPor?.message}
           {...register("ordenarPor")}
         />
+      </div>
 
-        <Button type="submit" carregando={isSubmitting}>
+      <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button type="button" variante="outline" onClick={aoLimparFiltros}>
+          Limpar
+        </Button>
+
+        <Button
+          type="submit"
+          carregando={isSubmitting && !carregandoBuscaYoutube}
+        >
           Filtrar
         </Button>
 
-        <Button type="button" variante="outline" onClick={aoLimparFiltros}>
-          Limpar
+        <Button
+          type="button"
+          variante="secondary"
+          iconeEsquerda={<Video className="h-5 w-5" />}
+          carregando={carregandoBuscaYoutube}
+          onClick={handleSubmit(buscarNoYoutube)}
+        >
+          Buscar no YouTube
         </Button>
       </div>
     </form>
