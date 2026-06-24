@@ -1,13 +1,16 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { AuthUser } from '../interface/auth-user.interface';
+import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
+import type { AuthUser } from '../interface/auth-user.interface';
+import type { AuthenticatedRequest } from '../interface/authenticated-request.interface';
 
+/**
+ * Retorna o usuário autenticado ou uma propriedade específica dele.
+ */
 export const CurrentUser = createParamDecorator(
   (data: keyof AuthUser | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    const user = request.user as AuthUser;
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    // Se passarmos um dado específico, retorna só ele.
-    // Caso contrário, retorna o objeto de usuário completo.
+    const user = request.user;
+
     return data ? user?.[data] : user;
   },
 );

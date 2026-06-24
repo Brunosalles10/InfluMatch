@@ -7,54 +7,48 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { AuthUser } from '../interface/auth-user.interface';
-
+import type { AuthenticatedRequest } from '../interface/authenticated-request.interface';
 @Injectable()
 export class RolesGuard implements CanActivate {
   private readonly logger = new Logger(RolesGuard.name);
 
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Autoriza a requisição comparando a role do usuário com as roles da rota.
+   */
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user as AuthUser;
-    const route = `${request.method} ${request.url}`;
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    //  Se a rota não tem o decorator @Roles, o acesso é livre
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return this.allow(`Rota sem restrição de role: ${route}`);
+    const user = request.user;
+    const route = `${request.method} ${request.originalUrl}`;
+
+    if (!requiredRoles?.length) {
+      return true;
     }
 
-    // Verifica se o usuário existe no request
     if (!user) {
-      throw new UnauthorizedException('Usuário não autenticado');
+      throw new UnauthorizedException('Usuário não autenticado.');
     }
 
-    //acesso total para ADMIN
-    if (user.role === 'ADMIN') {
-      return this.allow('Administrador tem acesso total');
+    if (user.role === Role.ADMIN) {
+      return true;
     }
 
-    // Verifica se a role do usuário está na lista exigida
     if (requiredRoles.includes(user.role)) {
-      return this.allow(`Usuário com role "${user.role}" tem acesso à rota`);
+      return true;
     }
 
-    // Acesso negado
     this.logger.warn(
       `Acesso negado: Usuário ${user.email} (role: ${user.role}) tentou acessar ${route}`,
     );
     throw new ForbiddenException('Seu nível de acesso não permite esta ação.');
-  }
-
-  private allow(mensagem: string): boolean {
-    this.logger.log(`ACESSO PERMITIDO: ${mensagem}`);
-    return true;
   }
 }

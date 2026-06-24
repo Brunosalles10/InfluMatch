@@ -2,7 +2,6 @@ import { Global, Logger, Module } from '@nestjs/common';
 import Redis from 'ioredis';
 import { CacheService } from './cache.service';
 
-// Módulo Redis global para cache e Pub/Sub
 @Global()
 @Module({
   providers: [
@@ -10,10 +9,10 @@ import { CacheService } from './cache.service';
       provide: 'REDIS_CLIENT',
       useFactory: () => {
         const logger = new Logger('RedisClient');
-        // Cria e configura o cliente Redis
+
         const client = new Redis({
           host: process.env.REDIS_HOST || 'redis',
-          port: parseInt(process.env.REDIS_PORT ?? '6379', 10), // Porta padrão do Redis
+          port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
         });
 
         client.on('connect', () => {

@@ -1,6 +1,9 @@
 import { SetMetadata } from '@nestjs/common';
+import { Role } from '@prisma/client';
 
 export const ROLES_KEY = 'roles';
 
-//decorator customizado para definir quais roles podem acessar
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+/**
+ * Define as roles autorizadas a acessar uma rota ou controller.
+ */
+export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);

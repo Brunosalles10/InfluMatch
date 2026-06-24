@@ -7,11 +7,11 @@ export class CacheService {
 
   constructor(@Inject('REDIS_CLIENT') private readonly redisClient: Redis) {}
 
-  // Recupera um valor do cache pelo chave
+  /** Recupera e desserializa um valor armazenado no Redis. */
   async get<T>(key: string): Promise<T | null> {
     try {
       const value = await this.redisClient.get(key);
-      if (!value) return null;
+      if (value === null) return null;
 
       this.logger.debug(`Cache HIT → ${key}`);
       return JSON.parse(value) as T;
@@ -21,37 +21,30 @@ export class CacheService {
     }
   }
 
-  // Armazena um valor no cache com uma chave e tempo de expiração (TTL)
+  /** Serializa e armazena um valor com tempo de expiração em segundos. */
   async set<T>(key: string, value: T, ttl = 60): Promise<void> {
     try {
       await this.redisClient.set(key, JSON.stringify(value), 'EX', ttl);
-      this.logger.log(`Cache SET → ${key} (TTL: ${ttl}s)`);
+      this.logger.debug(`Cache SET → ${key} (TTL: ${ttl}s)`);
     } catch (err) {
       this.handleError('gravar cache', key, err);
     }
   }
 
-  // Remove um valor do cache pela chave
+  /** Remove uma chave específica do Redis. */
   async del(key: string): Promise<void> {
     try {
       await this.redisClient.del(key);
-      this.logger.log(`Cache DEL → ${key}`);
+      this.logger.debug(`Cache DEL → ${key}`);
     } catch (err) {
       this.handleError('deletar cache', key, err);
     }
   }
 
-  // Limpa todo o cache do Redis
-  async flushAll(): Promise<void> {
-    try {
-      await this.redisClient.flushall();
-      this.logger.warn(' Todos os caches foram limpos!');
-    } catch (err) {
-      this.handleError('limpar todo o cache', 'all', err);
-    }
-  }
-
-  // Deleta chaves em lote baseadas em um padrão
+  /**
+   * Percorre o Redis com SCAN e remove todas as chaves correspondentes ao padrão.
+   * SCAN evita bloquear o Redis, diferentemente do comando KEYS.
+   */
   async deleteByPrefix(prefix: string): Promise<void> {
     try {
       let cursor = '0';
@@ -84,7 +77,9 @@ export class CacheService {
     }
   }
 
-  // Função auxiliar para lidar com erros
+  /**
+   * Registra falhas do cache sem interromper a operação principal da aplicação.
+   */
   private handleError(operation: string, key: string, error: unknown): void {
     const errorMessage =
       error instanceof Error ? error.message : 'Erro desconhecido';

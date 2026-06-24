@@ -10,6 +10,6 @@ import { UsersService } from './users.service';
   imports: [RedisModule, PrismaModule],
   controllers: [UsersController],
   providers: [UsersService, UserCacheInvalidationService, UserPasswordService],
-  exports: [UsersService],
+  exports: [UsersService, UserPasswordService],
 })
 export class UsersModule {}

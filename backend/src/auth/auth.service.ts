@@ -1,20 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Usuario } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { UserMapper, type UserResponse } from '../users/mappers/user.mapper';
+import { UserPasswordService } from '../users/services/user-password.service';
 import { UsersService } from '../users/users.service';
 
-export type UsuarioValidado = Omit<Usuario, 'senha'>;
+export type UsuarioValidado = UserResponse;
+
+export interface LoginResponse {
+  access_token: string;
+  user: Pick<UsuarioValidado, 'id' | 'nome' | 'email' | 'role'>;
+}
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
+    private readonly userPasswordService: UserPasswordService,
     private readonly jwtService: JwtService,
   ) {}
 
-  //valida o usuário pelo email e senha
+  /**
+   * Confere e-mail, situação da conta e senha, retornando dados sem o hash.
+   */
   async validateUser(
     email: string,
     password: string,
@@ -23,18 +32,33 @@ export class AuthService {
 
     const usuario = await this.usersService.findByEmail(email);
 
-    if (usuario?.ativo && (await bcrypt.compare(password, usuario.senha))) {
-      const { senha, ...result } = usuario;
-      return result;
+    if (!usuario || !usuario.ativo) {
+      return null;
     }
 
-    return null;
+    const senhaValida = await this.userPasswordService.compare(
+      password,
+      usuario.senha,
+    );
+
+    if (!senhaValida) {
+      return null;
+    }
+
+    return UserMapper.toResponse(usuario);
   }
 
-  async login(user: UsuarioValidado) {
-    this.logger.log(`Gerando Token JWT para: ${user.email}`);
+  /**
+   * Gera o JWT e retorna os dados públicos da sessão autenticada.
+   */
+  login(user: UsuarioValidado): LoginResponse {
+    this.logger.log(`Gerando token JWT para: ${user.email}`);
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
 
     return {
       access_token: this.jwtService.sign(payload),
