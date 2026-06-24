@@ -4,12 +4,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Usuario } from '@prisma/client';
+import { Usuario } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export class UserValidationUtil {
   private static readonly logger = new Logger(UserValidationUtil.name);
 
+  /**
+   * Busca um usuário pelo ID ou lança 404 quando ele não existe.
+   */
   static async findUserOrFail(prisma: PrismaService, id: string) {
     this.logger.debug(`Verificando existência do usuário ID: ${id}`);
 
@@ -26,20 +29,21 @@ export class UserValidationUtil {
     return user;
   }
 
+  /**
+   * Garante que o e-mail informado não pertence a outro usuário.
+   */
   static async ensureEmailIsUnique(
     prisma: PrismaService,
     newEmail?: string,
     userId?: string,
     currentEmail?: string,
   ): Promise<void> {
-    // Se não forneceu email novo ou é igual ao atual, não valida
     if (!newEmail || newEmail === currentEmail) return;
 
     const existing = await prisma.usuario.findUnique({
       where: { email: newEmail },
     });
 
-    // Se existe outro usuário com esse email, nega
     if (existing && existing.id !== userId) {
       this.logger.warn(
         `E-mail já em uso por outro usuário (ID: ${existing.id}) → ${newEmail}`,
@@ -48,20 +52,9 @@ export class UserValidationUtil {
     }
   }
 
-  static handlePrismaError(error: any): never {
-    const isUniqueConstraintError =
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002';
-
-    if (isUniqueConstraintError) {
-      this.logger.error(`Erro de unicidade detectado: Campo duplicado`);
-      throw new BadRequestException('E-mail já cadastrado.');
-    }
-
-    this.logger.error(`Erro inesperado: ${error.message}`, error.stack);
-    throw error;
-  }
-
+  /**
+   * Impede operações de usuários que já estão inativos.
+   */
   static ensureUserIsActive(user: Usuario): void {
     if (!user.ativo) {
       throw new ForbiddenException(
