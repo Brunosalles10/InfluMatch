@@ -1,8 +1,10 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../redis/cache.service';
-import { HandlePostActionsUtil } from './utils/handlePostActions';
+import { UsersService } from './users.service';
+import { UserCacheInvalidationService } from './services/user-cache-invalidation.service';
 import { UserPasswordService } from './services/user-password.service';
 
 describe('UsersService', () => {
@@ -19,15 +21,19 @@ describe('UsersService', () => {
     $transaction: jest.fn(),
   };
 
-  const cacheMock = {
+  const cacheServiceMock = {
     get: jest.fn(),
     set: jest.fn(),
     del: jest.fn(),
     deleteByPrefix: jest.fn(),
   };
 
-  const handlePostActionsMock = {
-    execute: jest.fn(),
+  const userCacheInvalidationServiceMock = {
+    invalidate: jest.fn(),
+  };
+
+  const configServiceMock = {
+    get: jest.fn().mockReturnValue(10),
   };
 
   const userPasswordServiceMock = {
@@ -47,11 +53,15 @@ describe('UsersService', () => {
         },
         {
           provide: CacheService,
-          useValue: cacheMock,
+          useValue: cacheServiceMock,
         },
         {
-          provide: HandlePostActionsUtil,
-          useValue: handlePostActionsMock,
+          provide: UserCacheInvalidationService,
+          useValue: userCacheInvalidationServiceMock,
+        },
+        {
+          provide: ConfigService,
+          useValue: configServiceMock,
         },
         {
           provide: UserPasswordService,
@@ -109,5 +119,34 @@ describe('UsersService', () => {
     await service.findByEmail('teste@email.com');
 
     expect(prismaMock.usuario.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  describe('create', () => {
+    it('deve criar usuário com senha criptografada', async () => {
+      const dto = {
+        nome: 'Usuário Teste',
+        email: 'teste@email.com',
+        password: 'Senha@123',
+      };
+
+      prismaMock.usuario.findUnique.mockResolvedValue(null);
+
+      userPasswordServiceMock.hash.mockResolvedValue('senha-criptografada');
+
+      prismaMock.usuario.create.mockResolvedValue({
+        id: '1',
+        nome: dto.nome,
+        email: dto.email,
+        senha: 'senha-criptografada',
+        role: 'USER',
+      });
+
+      const result = await service.create(dto);
+
+      expect(userPasswordServiceMock.hash).toHaveBeenCalledWith('Senha@123');
+      expect(prismaMock.usuario.create).toHaveBeenCalled();
+      expect(result.email).toBe(dto.email);
+      expect(userCacheInvalidationServiceMock.invalidate).toHaveBeenCalled();
+    });
   });
 });
