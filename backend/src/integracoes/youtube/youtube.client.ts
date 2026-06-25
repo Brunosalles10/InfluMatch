@@ -8,7 +8,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import {
   YoutubeCanalItem,
@@ -43,6 +43,9 @@ export class YoutubeClient {
       'https://www.googleapis.com/youtube/v3';
   }
 
+  /**
+   * Pesquisa vídeos por nicho e retorna somente os IDs encontrados.
+   */
   async buscarVideosPorNicho(
     nicho: string,
     quantidadeResultados: number,
@@ -84,6 +87,9 @@ export class YoutubeClient {
     }
   }
 
+  /**
+   * Busca estatísticas, snippet e duração dos vídeos encontrados.
+   */
   async buscarDetalhesDosVideos(
     videoIds: string[],
   ): Promise<YoutubeVideoItem[]> {
@@ -108,6 +114,9 @@ export class YoutubeClient {
     }
   }
 
+  /**
+   * Busca estatísticas e metadados dos canais relacionados aos vídeos.
+   */
   async buscarDetalhesDosCanais(
     channelIds: string[],
   ): Promise<YoutubeCanalItem[]> {
@@ -137,6 +146,9 @@ export class YoutubeClient {
     }
   }
 
+  /**
+   * Recupera a chave da API ou interrompe a operação se ela não estiver configurada.
+   */
   private obterApiKey(): string {
     const apiKey = this.configService.get<string>('YOUTUBE_API_KEY');
 
@@ -149,15 +161,22 @@ export class YoutubeClient {
     return apiKey;
   }
 
+  /**
+   * Converte erros da YouTube Data API em exceções HTTP compreensíveis.
+   */
   private tratarErroYoutube(error: unknown, operacao: string): never {
-    const axiosError = error as AxiosError<YoutubeErroResponse>;
+    const ehErroAxios = isAxiosError<YoutubeErroResponse>(error);
 
-    const status = axiosError.response?.status;
-    const reason = axiosError.response?.data?.error?.errors?.[0]?.reason;
-    const message =
-      axiosError.response?.data?.error?.message ??
-      axiosError.message ??
-      'Erro desconhecido ao consultar a YouTube Data API.';
+    const status = ehErroAxios ? error.response?.status : undefined;
+    const reason = ehErroAxios
+      ? error.response?.data?.error?.errors?.[0]?.reason
+      : undefined;
+
+    const message = ehErroAxios
+      ? (error.response?.data?.error?.message ??
+        error.message ??
+        'Erro desconhecido ao consultar a YouTube Data API.')
+      : 'Erro desconhecido ao consultar a YouTube Data API.';
 
     this.logger.error(`Erro ao ${operacao}: ${message}`);
 

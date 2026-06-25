@@ -29,6 +29,10 @@ export class YoutubeService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Executa a coleta do YouTube por nicho, filtra canais brasileiros,
+   * salva canais e vídeos no banco e atualiza os caches relacionados.
+   */
   async coletarPorNicho(
     dto: ColetarYoutubeDto,
   ): Promise<ResumoColetaYoutubeDto> {
@@ -130,7 +134,13 @@ export class YoutubeService {
     return response;
   }
 
-  private async salvarCanal(canal: YoutubeCanalItem, nichoId: string) {
+  /**
+   * Cria ou atualiza o influenciador e o perfil social relacionado ao canal.
+   */
+  private async salvarCanal(
+    canal: YoutubeCanalItem,
+    nichoId: string,
+  ): Promise<{ id: string }> {
     const dadosPerfil = this.youtubeMapper.mapearCanalParaPerfilSocial(canal);
 
     const influenciador = await this.influenciadoresService.buscarOuCriar({
@@ -140,84 +150,81 @@ export class YoutubeService {
       nichoId,
     });
 
-    return this.perfisSociaisService.upsertPorIdentificador({
+    const dadosComunsPerfil = {
+      nomeUsuario: dadosPerfil.nomeUsuario,
+      urlPerfil: dadosPerfil.urlPerfil,
+      totalSeguidores: dadosPerfil.totalSeguidores,
+      totalVisualizacoes: dadosPerfil.totalVisualizacoes,
+      totalConteudos: dadosPerfil.totalConteudos,
+      ultimaSincronizacaoEm: new Date(),
+      influenciador: {
+        connect: { id: influenciador.id },
+      },
+    };
+
+    const perfil = await this.perfisSociaisService.upsertPorIdentificador({
       plataforma: Plataforma.YOUTUBE,
       identificadorExterno: dadosPerfil.identificadorExterno,
       dataCreate: {
         plataforma: Plataforma.YOUTUBE,
         identificadorExterno: dadosPerfil.identificadorExterno,
-        nomeUsuario: dadosPerfil.nomeUsuario,
-        urlPerfil: dadosPerfil.urlPerfil,
-        totalSeguidores: dadosPerfil.totalSeguidores,
-        totalVisualizacoes: dadosPerfil.totalVisualizacoes,
-        totalConteudos: dadosPerfil.totalConteudos,
-        ultimaSincronizacaoEm: new Date(),
-        influenciador: {
-          connect: { id: influenciador.id },
-        },
+        ...dadosComunsPerfil,
       },
-      dataUpdate: {
-        nomeUsuario: dadosPerfil.nomeUsuario,
-        urlPerfil: dadosPerfil.urlPerfil,
-        totalSeguidores: dadosPerfil.totalSeguidores,
-        totalVisualizacoes: dadosPerfil.totalVisualizacoes,
-        totalConteudos: dadosPerfil.totalConteudos,
-        ultimaSincronizacaoEm: new Date(),
-        influenciador: {
-          connect: { id: influenciador.id },
-        },
-      },
+      dataUpdate: dadosComunsPerfil,
     });
+
+    return { id: perfil.id };
   }
 
-  private async salvarVideo(video: YoutubeVideoItem, perfilSocialId: string) {
+  /**
+   * Cria ou atualiza o conteúdo relacionado ao vídeo coletado.
+   */
+  private async salvarVideo(
+    video: YoutubeVideoItem,
+    perfilSocialId: string,
+  ): Promise<void> {
     const dadosConteudo = this.youtubeMapper.mapearVideoParaConteudo(video);
 
-    return this.conteudosService.upsertPorIdentificador({
+    const dadosComunsConteudo = {
+      tipoConteudo: dadosConteudo.tipoConteudo,
+      titulo: dadosConteudo.titulo,
+      descricao: dadosConteudo.descricao,
+      urlConteudo: dadosConteudo.urlConteudo,
+      urlThumbnail: dadosConteudo.urlThumbnail,
+      totalViews: dadosConteudo.totalViews,
+      totalLikes: dadosConteudo.totalLikes,
+      totalComentarios: dadosConteudo.totalComentarios,
+      taxaEngajamento: dadosConteudo.taxaEngajamento,
+      publicadoEm: dadosConteudo.publicadoEm,
+      perfilSocial: {
+        connect: { id: perfilSocialId },
+      },
+    };
+
+    await this.conteudosService.upsertPorIdentificador({
       plataforma: Plataforma.YOUTUBE,
       identificadorExterno: dadosConteudo.identificadorExterno,
       dataCreate: {
         plataforma: Plataforma.YOUTUBE,
-        tipoConteudo: dadosConteudo.tipoConteudo,
         identificadorExterno: dadosConteudo.identificadorExterno,
-        titulo: dadosConteudo.titulo,
-        descricao: dadosConteudo.descricao,
-        urlConteudo: dadosConteudo.urlConteudo,
-        urlThumbnail: dadosConteudo.urlThumbnail,
-        totalViews: dadosConteudo.totalViews,
-        totalLikes: dadosConteudo.totalLikes,
-        totalComentarios: dadosConteudo.totalComentarios,
-        taxaEngajamento: dadosConteudo.taxaEngajamento,
-        publicadoEm: dadosConteudo.publicadoEm,
-        perfilSocial: {
-          connect: { id: perfilSocialId },
-        },
+        ...dadosComunsConteudo,
       },
-      dataUpdate: {
-        tipoConteudo: dadosConteudo.tipoConteudo,
-        titulo: dadosConteudo.titulo,
-        descricao: dadosConteudo.descricao,
-        urlConteudo: dadosConteudo.urlConteudo,
-        urlThumbnail: dadosConteudo.urlThumbnail,
-        totalViews: dadosConteudo.totalViews,
-        totalLikes: dadosConteudo.totalLikes,
-        totalComentarios: dadosConteudo.totalComentarios,
-        taxaEngajamento: dadosConteudo.taxaEngajamento,
-        publicadoEm: dadosConteudo.publicadoEm,
-        perfilSocial: {
-          connect: { id: perfilSocialId },
-        },
-      },
+      dataUpdate: dadosComunsConteudo,
     });
   }
 
+  /**
+   * Lê o TTL da coleta no ambiente ou usa 3600 segundos como fallback.
+   */
   private obterTtlCacheYoutube(): number {
     const ttl = Number(
       this.configService.get<string>('YOUTUBE_CACHE_TTL_SECONDS'),
     );
     return Number.isNaN(ttl) ? 3600 : ttl;
   }
-
+  /**
+   * Verifica se o canal declarou Brasil como país no próprio cadastro do YouTube.
+   */
   private ehCanalBrasileiro(canal: YoutubeCanalItem): boolean {
     return canal.snippet?.country?.toUpperCase() === 'BR';
   }
