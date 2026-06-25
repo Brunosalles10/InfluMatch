@@ -1,8 +1,25 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { type Influenciador, Prisma } from '@prisma/client';
 import { ListarInfluenciadoresDto } from './dto/listar-influenciadores.dto';
 import { InfluenciadoresRepository } from './influenciadores.repository';
-import { InfluenciadorMapper } from './mappers/influenciador.mapper';
+import {
+  InfluenciadorMapper,
+  type InfluenciadorResponse,
+} from './mappers/influenciador.mapper';
+
+export interface InfluenciadoresPaginadosResponse {
+  data: InfluenciadorResponse[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
+
+interface BuscarOuCriarInfluenciadorParams {
+  nome: string;
+  descricao?: string | null;
+  imagemUrl?: string | null;
+  nichoId?: string | null;
+}
 
 @Injectable()
 export class InfluenciadoresService {
@@ -12,7 +29,12 @@ export class InfluenciadoresService {
     private readonly influenciadoresRepository: InfluenciadoresRepository,
   ) {}
 
-  async listar(filtros: ListarInfluenciadoresDto) {
+  /**
+   * Lista influenciadores com filtros opcionais e paginação.
+   */
+  async listar(
+    filtros: ListarInfluenciadoresDto,
+  ): Promise<InfluenciadoresPaginadosResponse> {
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 10;
 
@@ -25,14 +47,19 @@ export class InfluenciadoresService {
     });
 
     return {
-      data: result.data.map(InfluenciadorMapper.paraResposta),
+      data: result.data.map((influenciador) =>
+        InfluenciadorMapper.paraResposta(influenciador),
+      ),
       total: result.total,
       page,
       lastPage: Math.ceil(result.total / limit),
     };
   }
 
-  async buscarPorId(id: string) {
+  /**
+   * Busca um influenciador pelo ID e retorna erro quando ele não existir.
+   */
+  async buscarPorId(id: string): Promise<InfluenciadorResponse> {
     const influenciador = await this.influenciadoresRepository.buscarPorId(id);
 
     if (!influenciador) {
@@ -42,15 +69,17 @@ export class InfluenciadoresService {
     return InfluenciadorMapper.paraResposta(influenciador);
   }
 
-  async buscarOuCriar(data: {
-    nome: string;
-    descricao?: string | null;
-    imagemUrl?: string | null;
-    nichoId?: string | null;
-  }) {
+  /**
+   * Reutiliza um influenciador existente pelo nome e nicho ou cria um novo registro.
+   */
+  async buscarOuCriar(
+    data: BuscarOuCriarInfluenciadorParams,
+  ): Promise<Influenciador> {
+    const nome = data.nome.trim();
+
     const influenciadorExistente =
       await this.influenciadoresRepository.buscarPorNomeENicho(
-        data.nome,
+        nome,
         data.nichoId,
       );
 
@@ -64,10 +93,10 @@ export class InfluenciadoresService {
       );
     }
 
-    this.logger.log(`Criando influenciador: ${data.nome}`);
+    this.logger.log(`Criando influenciador: ${nome}`);
 
     const createData: Prisma.InfluenciadorCreateInput = {
-      nome: data.nome,
+      nome,
       descricao: data.descricao,
       imagemUrl: data.imagemUrl,
       ...(data.nichoId

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Plataforma, Prisma } from '@prisma/client';
+import { type Influenciador, type Plataforma, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import type { InfluenciadorComRelacoes } from './mappers/influenciador.mapper';
 
 interface ListarInfluenciadoresParams {
   busca?: string;
@@ -10,19 +11,39 @@ interface ListarInfluenciadoresParams {
   limit: number;
 }
 
+interface ResultadoPaginado<T> {
+  data: T[];
+  total: number;
+}
+
 @Injectable()
 export class InfluenciadoresRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  criar(data: Prisma.InfluenciadorCreateInput) {
+  /**
+   * Persiste um novo influenciador no banco de dados.
+   */
+  criar(data: Prisma.InfluenciadorCreateInput): Promise<Influenciador> {
     return this.prisma.influenciador.create({ data });
   }
 
-  atualizar(id: string, data: Prisma.InfluenciadorUpdateInput) {
-    return this.prisma.influenciador.update({ where: { id }, data });
+  /**
+   * Atualiza os dados de um influenciador existente.
+   */
+  atualizar(
+    id: string,
+    data: Prisma.InfluenciadorUpdateInput,
+  ): Promise<Influenciador> {
+    return this.prisma.influenciador.update({
+      where: { id },
+      data,
+    });
   }
 
-  buscarPorId(id: string) {
+  /**
+   * Busca um influenciador pelo ID incluindo nicho e perfis sociais.
+   */
+  buscarPorId(id: string): Promise<InfluenciadorComRelacoes | null> {
     return this.prisma.influenciador.findUnique({
       where: { id },
       include: {
@@ -32,7 +53,13 @@ export class InfluenciadoresRepository {
     });
   }
 
-  buscarPorNomeENicho(nome: string, nichoId?: string | null) {
+  /**
+   * Busca um influenciador pelo nome dentro de um nicho específico.
+   */
+  buscarPorNomeENicho(
+    nome: string,
+    nichoId?: string | null,
+  ): Promise<Influenciador | null> {
     return this.prisma.influenciador.findFirst({
       where: {
         nome,
@@ -41,7 +68,12 @@ export class InfluenciadoresRepository {
     });
   }
 
-  async listar(params: ListarInfluenciadoresParams) {
+  /**
+   * Lista influenciadores com filtros, paginação e perfis sociais relacionados.
+   */
+  async listar(
+    params: ListarInfluenciadoresParams,
+  ): Promise<ResultadoPaginado<InfluenciadorComRelacoes>> {
     const { busca, nicho, plataforma, page, limit } = params;
     const skip = (page - 1) * limit;
 
@@ -81,7 +113,9 @@ export class InfluenciadoresRepository {
           nicho: true,
           perfisSociais: plataforma ? { where: { plataforma } } : true,
         },
-        orderBy: { atualizadoEm: 'desc' },
+        orderBy: {
+          atualizadoEm: 'desc',
+        },
       }),
       this.prisma.influenciador.count({ where }),
     ]);
