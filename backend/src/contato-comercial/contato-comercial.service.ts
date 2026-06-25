@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { EmailService } from '../email/email.service';
@@ -13,6 +18,7 @@ export type ContatoComercialValidadoResponse = {
 @Injectable()
 export class ContatoComercialService {
   private readonly logger = new Logger(ContatoComercialService.name);
+  private readonly enviosEmAndamento = new Set<string>();
 
   constructor(
     private readonly emailService: EmailService,
@@ -24,25 +30,61 @@ export class ContatoComercialService {
   ): Promise<ContatoComercialValidadoResponse> {
     this.validarDataPrevista(dto.dataPrevista);
 
+    const chaveLock = this.criarChaveLock(dto);
+
+    if (this.enviosEmAndamento.has(chaveLock)) {
+      this.logger.warn(
+        `Envio bloqueado por lock ativo. Tipo de documento: ${dto.tipoDocumento}`,
+      );
+
+      throw new ConflictException(
+        'Já existe um envio em andamento para este contato.',
+      );
+    }
+
+    this.enviosEmAndamento.add(chaveLock);
+    this.logger.log('Lock adquirido para envio de contato comercial.');
+
     const protocolo = randomUUID().slice(0, 8).toUpperCase();
-    const destinatario = this.configService.getOrThrow<string>('SMTP_TO');
 
-    await this.emailService.enviarEmail({
-      para: destinatario,
-      assunto: `Novo contato comercial - InfluMatch (${protocolo})`,
-      texto: this.montarTextoEmail(dto, protocolo),
-      html: this.montarHtmlEmail(dto, protocolo),
-    });
+    try {
+      const destinatario = this.configService.getOrThrow<string>('SMTP_TO');
 
-    this.logger.log(
-      `Contato comercial enviado. Tipo de documento: ${dto.tipoDocumento}. Protocolo: ${protocolo}`,
-    );
+      this.logger.log(
+        `Iniciando envio de contato comercial. Protocolo: ${protocolo}`,
+      );
 
-    return {
-      mensagem: 'Contato comercial enviado com sucesso.',
-      protocolo,
-      validadoEm: new Date().toISOString(),
-    };
+      await this.emailService.enviarEmail({
+        para: destinatario,
+        assunto: `Novo contato comercial - InfluMatch (${protocolo})`,
+        texto: this.montarTextoEmail(dto, protocolo),
+        html: this.montarHtmlEmail(dto, protocolo),
+      });
+
+      this.logger.log(
+        `Contato comercial enviado com sucesso. Protocolo: ${protocolo}`,
+      );
+
+      return {
+        mensagem: 'Contato comercial enviado com sucesso.',
+        protocolo,
+        validadoEm: new Date().toISOString(),
+      };
+    } catch (error) {
+      const mensagemErro =
+        error instanceof Error ? error.message : 'Erro desconhecido';
+
+      this.logger.error(
+        `Falha no envio do contato comercial. Protocolo: ${protocolo}. Erro: ${mensagemErro}`,
+      );
+
+      throw error;
+    } finally {
+      this.enviosEmAndamento.delete(chaveLock);
+      this.logger.log(
+        `Lock liberado para contato comercial. Protocolo: ${protocolo}`,
+      );
+    }
   }
 
   validarContato(
@@ -57,6 +99,13 @@ export class ContatoComercialService {
       protocolo,
       validadoEm: new Date().toISOString(),
     };
+  }
+
+  private criarChaveLock(dto: ValidarContatoComercialDto): string {
+    const emailNormalizado = dto.email.trim().toLowerCase();
+    const documentoNormalizado = dto.documento.replace(/\D/g, '');
+
+    return `${emailNormalizado}:${documentoNormalizado}`;
   }
 
   private validarDataPrevista(data: string): void {

@@ -1,25 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { Role } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-
+import { AuthUser } from './interface/auth-user.interface';
 interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
+  role: Role;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly configService: ConfigService) {
-    const secret = configService.get<string>('JWT_SECRET');
-
-    // Segunda camada de proteção garantindo que a Strategy não inicialize sem a chave
-    if (!secret) {
-      throw new Error(
-        'FALHA CRÍTICA: Variável JWT_SECRET ausente na inicialização da Strategy!',
-      );
-    }
+  constructor(configService: ConfigService) {
+    const secret = configService.getOrThrow<string>('JWT_SECRET');
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -28,10 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload) {
+  /**
+   * Converte o conteúdo validado do JWT no usuário da requisição.
+   */
+  validate(payload: JwtPayload): AuthUser {
     return {
       sub: payload.sub,
-      userId: payload.sub,
       email: payload.email,
       role: payload.role,
     };

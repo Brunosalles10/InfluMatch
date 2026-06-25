@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer'; // ✓ NOVO
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,

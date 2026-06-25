@@ -1,7 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Search } from "lucide-react";
-import { useForm } from "react-hook-form";
-
 import { Button } from "@/app/components/ui/Button";
 import { Input } from "@/app/components/ui/Input";
 import { Select } from "@/app/components/ui/Select";
@@ -10,10 +6,15 @@ import {
   type DadosFiltroRankingConteudos,
   type EntradaFiltroRankingConteudos,
 } from "@/app/schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Search, Video } from "lucide-react";
+import { useForm } from "react-hook-form";
 
 type ConteudosFiltrosProps = {
   filtrosAtuais: DadosFiltroRankingConteudos;
+  carregandoBuscaYoutube: boolean;
   aoAplicarFiltros: (filtros: DadosFiltroRankingConteudos) => void;
+  aoBuscarNoYoutube: (filtros: DadosFiltroRankingConteudos) => Promise<void>;
   aoLimparFiltros: () => void;
 };
 
@@ -41,7 +42,9 @@ const opcoesOrdenacao = [
 
 export function ConteudosFiltros({
   filtrosAtuais,
+  carregandoBuscaYoutube,
   aoAplicarFiltros,
+  aoBuscarNoYoutube,
   aoLimparFiltros,
 }: ConteudosFiltrosProps) {
   const {
@@ -65,12 +68,33 @@ export function ConteudosFiltros({
     },
   });
 
+  /**
+   * Aplica os filtros consultando somente os conteúdos salvos no banco.
+   */
   function enviarFormulario(dados: DadosFiltroRankingConteudos) {
-    aoAplicarFiltros({
+    aoAplicarFiltros(prepararFiltros(dados));
+  }
+
+  /**
+   * Solicita a coleta de novos vídeos diretamente no YouTube.
+   */
+  async function buscarNoYoutube(
+    dados: DadosFiltroRankingConteudos,
+  ): Promise<void> {
+    await aoBuscarNoYoutube(prepararFiltros(dados));
+  }
+
+  /**
+   * Reinicia a paginação sempre que uma nova busca é executada.
+   */
+  function prepararFiltros(
+    dados: DadosFiltroRankingConteudos,
+  ): DadosFiltroRankingConteudos {
+    return {
       ...dados,
       page: 1,
       limit: filtrosAtuais.limit,
-    });
+    };
   }
 
   return (
@@ -78,7 +102,7 @@ export function ConteudosFiltros({
       onSubmit={handleSubmit(enviarFormulario)}
       className="rounded-2xl border border-border bg-surface/80 p-4 shadow-card"
     >
-      <div className="grid gap-4 xl:grid-cols-[1fr_150px_160px_160px_170px_auto_auto]">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_150px_160px_160px_170px]">
         <Input
           placeholder="Buscar por título, criador ou palavra-chave..."
           erro={errors.busca?.message}
@@ -109,13 +133,28 @@ export function ConteudosFiltros({
           erro={errors.ordenarPor?.message}
           {...register("ordenarPor")}
         />
+      </div>
 
-        <Button type="submit" carregando={isSubmitting}>
+      <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button type="button" variante="outline" onClick={aoLimparFiltros}>
+          Limpar
+        </Button>
+
+        <Button
+          type="submit"
+          carregando={isSubmitting && !carregandoBuscaYoutube}
+        >
           Filtrar
         </Button>
 
-        <Button type="button" variante="outline" onClick={aoLimparFiltros}>
-          Limpar
+        <Button
+          type="button"
+          variante="secondary"
+          iconeEsquerda={<Video className="h-5 w-5" />}
+          carregando={carregandoBuscaYoutube}
+          onClick={handleSubmit(buscarNoYoutube)}
+        >
+          Buscar no YouTube
         </Button>
       </div>
     </form>

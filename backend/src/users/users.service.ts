@@ -17,8 +17,8 @@ import {
   UserResponse,
   userSafeSelect,
 } from './mappers/user.mapper';
+import { UserCacheInvalidationService } from './services/user-cache-invalidation.service';
 import { UserPasswordService } from './services/user-password.service';
-import { HandlePostActionsUtil } from './utils/handlePostActions';
 import { UserValidationUtil } from './utils/user-validation.utils';
 
 export interface PaginatedUsersResponse {
@@ -35,10 +35,11 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
-    private readonly handlePostActionsUtil: HandlePostActionsUtil,
+    private readonly userCacheInvalidationService: UserCacheInvalidationService,
     private readonly userPasswordService: UserPasswordService,
   ) {}
 
+  /** Cria um usuário, criptografa sua senha e invalida os caches. */
   async create(createUserDto: CreateUserDto): Promise<UserResponse> {
     this.logger.log(`Iniciando criação de usuário: ${createUserDto.email}`);
 
@@ -62,11 +63,12 @@ export class UsersService {
 
     this.logger.log(`Novo usuário criado com sucesso: ${newUser.email}`);
 
-    await this.handlePostActionsUtil.execute(newUser, 'created');
+    await this.userCacheInvalidationService.invalidate(newUser.id);
 
     return UserMapper.toResponse(newUser);
   }
 
+  /** Retorna usuários paginados, priorizando resultados armazenados no cache. */
   async findAll(
     page: number = 1,
     limit: number = 20,
@@ -110,6 +112,7 @@ export class UsersService {
     return result;
   }
 
+  /** Busca um usuário pelo ID, utilizando cache quando disponível. */
   async findOne(id: string): Promise<UserResponse> {
     this.logger.log(`Buscando usuário ID: ${id}`);
 
@@ -131,6 +134,7 @@ export class UsersService {
     return userResponse;
   }
 
+  /** Atualiza nome ou e-mail após validar autorização e unicidade. */
   async update(
     id: string,
     dto: UpdateUserDto,
@@ -180,11 +184,12 @@ export class UsersService {
 
     this.logger.log(`Usuário ID ${id} atualizado com sucesso`);
 
-    await this.handlePostActionsUtil.execute(updatedUser, 'updated');
+    await this.userCacheInvalidationService.invalidate(updatedUser.id);
 
     return UserMapper.toResponse(updatedUser);
   }
 
+  /** Altera a senha do próprio usuário após conferir a senha atual. */
   async updateOwnPassword(
     userId: string,
     dto: UpdatePasswordDto,
@@ -223,9 +228,10 @@ export class UsersService {
 
     this.logger.log(`Senha do usuário ID ${userId} atualizada com sucesso`);
 
-    await this.handlePostActionsUtil.execute(updatedUser, 'updated');
+    await this.userCacheInvalidationService.invalidate(updatedUser.id);
   }
 
+  /** Desativa a conta do usuário autenticado. */
   async removeOwnAccount(userId: string): Promise<void> {
     this.logger.log(`Usuário ID ${userId} solicitou exclusão da própria conta`);
 
@@ -236,6 +242,7 @@ export class UsersService {
     await this.deactivateUser(user.id);
   }
 
+  /** Desativa uma conta por ação administrativa. */
   async remove(id: string): Promise<void> {
     this.logger.log(`Removendo usuário ID: ${id}`);
 
@@ -244,14 +251,16 @@ export class UsersService {
     await this.deactivateUser(id);
   }
 
+  /** Busca internamente um usuário pelo e-mail, incluindo sua senha criptografada. */
   async findByEmail(email: string): Promise<Usuario | null> {
     this.logger.debug(`Buscando usuário por email: ${email}`);
 
-    return await this.prisma.usuario.findUnique({
+    return this.prisma.usuario.findUnique({
       where: { email },
     });
   }
 
+  /** Realiza a exclusão lógica da conta e invalida seus caches. */
   private async deactivateUser(id: string): Promise<void> {
     await this.prisma.usuario.update({
       where: { id },
@@ -260,6 +269,6 @@ export class UsersService {
 
     this.logger.log(`Usuário ID ${id} marcado como inativo.`);
 
-    await this.handlePostActionsUtil.execute({ id }, 'deleted');
+    await this.userCacheInvalidationService.invalidate(id);
   }
 }

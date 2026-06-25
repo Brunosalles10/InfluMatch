@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Plataforma, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import type { PerfilSocialComRelacoes } from './mappers/perfil-social.mapper';
 
 interface ListarPerfisSociaisParams {
   plataforma?: Plataforma;
@@ -9,11 +10,19 @@ interface ListarPerfisSociaisParams {
   limit: number;
 }
 
+interface ResultadoPaginado<T> {
+  data: T[];
+  total: number;
+}
+
 @Injectable()
 export class PerfisSociaisRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  buscarPorId(id: string) {
+  /**
+   * Busca um perfil social pelo ID incluindo influenciador e nicho.
+   */
+  buscarPorId(id: string): Promise<PerfilSocialComRelacoes | null> {
     return this.prisma.perfilSocial.findUnique({
       where: { id },
       include: {
@@ -24,6 +33,9 @@ export class PerfisSociaisRepository {
     });
   }
 
+  /**
+   * Busca um perfil social pela chave única de plataforma e identificador externo.
+   */
   buscarPorIdentificador(plataforma: Plataforma, identificadorExterno: string) {
     return this.prisma.perfilSocial.findUnique({
       where: {
@@ -35,6 +47,9 @@ export class PerfisSociaisRepository {
     });
   }
 
+  /**
+   * Cria ou atualiza um perfil social pela chave única de plataforma e identificador externo.
+   */
   upsertPorIdentificador(params: {
     plataforma: Plataforma;
     identificadorExterno: string;
@@ -53,7 +68,12 @@ export class PerfisSociaisRepository {
     });
   }
 
-  async listar(params: ListarPerfisSociaisParams) {
+  /**
+   * Lista perfis sociais com filtros, paginação e ordenação por seguidores.
+   */
+  async listar(
+    params: ListarPerfisSociaisParams,
+  ): Promise<ResultadoPaginado<PerfilSocialComRelacoes>> {
     const { plataforma, busca, page, limit } = params;
     const skip = (page - 1) * limit;
 

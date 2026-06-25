@@ -1,5 +1,3 @@
-// src/users/mappers/user.mapper.ts
-
 import { Prisma, Usuario } from '@prisma/client';
 
 export const userSafeSelect = {

@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { type Nicho } from '@prisma/client';
 import { gerarSlug } from 'src/common/utils/slug.util';
 import { CriarNichoDto } from './dto/criar-nicho.dto';
 import { ListarNichosDto } from './dto/listar-nichos.dto';
@@ -15,8 +16,12 @@ export class NichosService {
 
   constructor(private readonly nichosRepository: NichosRepository) {}
 
-  async criar(dto: CriarNichoDto) {
-    const slug = gerarSlug(dto.nome);
+  /**
+   * Cria um novo nicho, impedindo cadastro duplicado pelo slug.
+   */
+  async criar(dto: CriarNichoDto): Promise<Nicho> {
+    const nome = dto.nome.trim();
+    const slug = gerarSlug(nome);
 
     const nichoExistente = await this.nichosRepository.buscarPorSlug(slug);
 
@@ -26,19 +31,25 @@ export class NichosService {
       );
     }
 
-    this.logger.log(`Criando nicho: ${dto.nome}`);
+    this.logger.log(`Criando nicho: ${nome}`);
 
     return this.nichosRepository.criar({
-      nome: dto.nome,
+      nome,
       slug,
     });
   }
 
-  listar(filtros: ListarNichosDto) {
+  /**
+   * Lista nichos, aplicando busca por nome ou slug quando informado.
+   */
+  listar(filtros: ListarNichosDto): Promise<Nicho[]> {
     return this.nichosRepository.listar(filtros.busca);
   }
 
-  async buscarPorId(id: string) {
+  /**
+   * Busca um nicho pelo ID e retorna erro quando ele não existir.
+   */
+  async buscarPorId(id: string): Promise<Nicho> {
     const nicho = await this.nichosRepository.buscarPorId(id);
 
     if (!nicho) {
@@ -48,18 +59,23 @@ export class NichosService {
     return nicho;
   }
 
-  async buscarOuCriarPorNome(nome: string) {
-    const slug = gerarSlug(nome);
+  /**
+   * Retorna um nicho existente pelo nome ou cria automaticamente quando não existir.
+   */
+  async buscarOuCriarPorNome(nome: string): Promise<Nicho> {
+    const nomeNormalizado = nome.trim();
+    const slug = gerarSlug(nomeNormalizado);
+
     const nichoExistente = await this.nichosRepository.buscarPorSlug(slug);
 
     if (nichoExistente) {
       return nichoExistente;
     }
 
-    this.logger.log(`Criando nicho automaticamente: ${nome}`);
+    this.logger.log(`Criando nicho automaticamente: ${nomeNormalizado}`);
 
     return this.nichosRepository.criar({
-      nome: nome.trim(),
+      nome: nomeNormalizado,
       slug,
     });
   }

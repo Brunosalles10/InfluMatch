@@ -34,7 +34,7 @@ export class YoutubeService {
   ): Promise<ResumoColetaYoutubeDto> {
     const quantidadeResultados = dto.quantidadeResultados ?? 10;
     const slugNicho = gerarSlug(dto.nicho);
-    const cacheKey = `youtube:coleta:nicho:${slugNicho}:qtd:${quantidadeResultados}`;
+    const cacheKey = `youtube:coleta:br:nicho:${slugNicho}:qtd:${quantidadeResultados}`;
 
     const cache = await this.cacheService.get<ResumoColetaYoutubeDto>(cacheKey);
     if (cache) {
@@ -61,7 +61,25 @@ export class YoutubeService {
       .map((video) => this.youtubeMapper.extrairChannelIdDoVideo(video))
       .filter((channelId): channelId is string => Boolean(channelId));
 
-    const canais = await this.youtubeClient.buscarDetalhesDosCanais(channelIds);
+    const canaisEncontrados =
+      await this.youtubeClient.buscarDetalhesDosCanais(channelIds);
+
+    const canais = canaisEncontrados.filter((canal) =>
+      this.ehCanalBrasileiro(canal),
+    );
+
+    const idsCanaisBrasileiros = new Set(canais.map((canal) => canal.id));
+
+    const videosBrasileiros = videos.filter((video) => {
+      const channelId = this.youtubeMapper.extrairChannelIdDoVideo(video);
+
+      return channelId ? idsCanaisBrasileiros.has(channelId) : false;
+    });
+
+    this.logger.log(
+      `${canais.length} de ${canaisEncontrados.length} canais possuem país BR.`,
+    );
+
     const canaisPorId = new Map(canais.map((canal) => [canal.id, canal]));
     const perfisPorCanalId = new Map<string, { id: string }>();
 
@@ -72,7 +90,7 @@ export class YoutubeService {
 
     let totalConteudosProcessados = 0;
 
-    for (const video of videos) {
+    for (const video of videosBrasileiros) {
       const channelId = this.youtubeMapper.extrairChannelIdDoVideo(video);
       if (!channelId) continue;
 
@@ -96,7 +114,7 @@ export class YoutubeService {
         nome: nicho.nome,
         slug: nicho.slug,
       },
-      totalVideosEncontrados: videos.length,
+      totalVideosEncontrados: videosBrasileiros.length,
       totalCanaisProcessados: canais.length,
       totalConteudosProcessados,
       retornadoDoCache: false,
@@ -198,5 +216,9 @@ export class YoutubeService {
       this.configService.get<string>('YOUTUBE_CACHE_TTL_SECONDS'),
     );
     return Number.isNaN(ttl) ? 3600 : ttl;
+  }
+
+  private ehCanalBrasileiro(canal: YoutubeCanalItem): boolean {
+    return canal.snippet?.country?.toUpperCase() === 'BR';
   }
 }

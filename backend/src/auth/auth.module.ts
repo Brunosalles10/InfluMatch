@@ -12,20 +12,12 @@ import { LocalStrategy } from './local.strategy';
   imports: [
     UsersModule,
     PassportModule,
-    // Utilizamos registerAsync para garantir que as variáveis de ambiente já foram carregadas
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET');
+        const secret = configService.getOrThrow<string>('JWT_SECRET');
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1h';
-
-        // Fail-Fast: Se não houver chave, a aplicação quebra imediatamente
-        if (!secret) {
-          throw new Error(
-            'FALHA CRÍTICA: Variável de ambiente JWT_SECRET não está definida!',
-          );
-        }
 
         return {
           secret,

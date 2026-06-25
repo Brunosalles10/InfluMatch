@@ -8,9 +8,30 @@ import {
   FiltroRankingInfluenciadoresDto,
   OrdenacaoRankingInfluenciador,
 } from './dto/filtro-ranking-influenciadores.dto';
-import { RankingConteudoMapper } from './mappers/ranking-conteudo.mapper';
-import { RankingInfluenciadorMapper } from './mappers/ranking-influenciador.mapper';
+import {
+  RankingConteudoMapper,
+  type RankingConteudoResponse,
+} from './mappers/ranking-conteudo.mapper';
+import {
+  RankingInfluenciadorMapper,
+  type RankingInfluenciadorResponse,
+} from './mappers/ranking-influenciador.mapper';
 import { RankingsRepository } from './rankings.repository';
+
+export interface RankingPaginadoResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  lastPage: number;
+}
+
+export type RankingConteudosResponse =
+  RankingPaginadoResponse<RankingConteudoResponse>;
+
+export type RankingInfluenciadoresResponse =
+  RankingPaginadoResponse<RankingInfluenciadorResponse>;
 
 @Injectable()
 export class RankingsService {
@@ -22,10 +43,16 @@ export class RankingsService {
     private readonly cacheService: CacheService,
   ) {}
 
-  async listarConteudos(filtros: FiltroRankingConteudosDto) {
+  /**
+   * Lista conteúdos ranqueados, usando cache quando existir.
+   */
+  async listarConteudos(
+    filtros: FiltroRankingConteudosDto,
+  ): Promise<RankingConteudosResponse> {
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 10;
     const ordenarPor = filtros.ordenarPor ?? OrdenacaoRankingConteudo.VIRAL;
+
     const cacheKey = this.montarCacheKey('conteudos', {
       ...filtros,
       page,
@@ -33,7 +60,9 @@ export class RankingsService {
       ordenarPor,
     });
 
-    const cache = await this.cacheService.get<any>(cacheKey);
+    const cache =
+      await this.cacheService.get<RankingConteudosResponse>(cacheKey);
+
     if (cache) {
       this.logger.debug(`Ranking de conteúdos retornado do cache: ${cacheKey}`);
       return cache;
@@ -51,7 +80,7 @@ export class RankingsService {
 
     const totalPages = Math.ceil(result.total / limit);
 
-    const response = {
+    const response: RankingConteudosResponse = {
       data: result.data.map((conteudo, index) =>
         RankingConteudoMapper.paraResposta(
           conteudo,
@@ -70,11 +99,17 @@ export class RankingsService {
     return response;
   }
 
-  async listarInfluenciadores(filtros: FiltroRankingInfluenciadoresDto) {
+  /**
+   * Lista influenciadores ranqueados, usando cache quando existir.
+   */
+  async listarInfluenciadores(
+    filtros: FiltroRankingInfluenciadoresDto,
+  ): Promise<RankingInfluenciadoresResponse> {
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 10;
     const ordenarPor =
       filtros.ordenarPor ?? OrdenacaoRankingInfluenciador.SEGUIDORES;
+
     const cacheKey = this.montarCacheKey('influenciadores', {
       ...filtros,
       page,
@@ -82,7 +117,9 @@ export class RankingsService {
       ordenarPor,
     });
 
-    const cache = await this.cacheService.get<any>(cacheKey);
+    const cache =
+      await this.cacheService.get<RankingInfluenciadoresResponse>(cacheKey);
+
     if (cache) {
       this.logger.debug(
         `Ranking de influenciadores retornado do cache: ${cacheKey}`,
@@ -114,6 +151,7 @@ export class RankingsService {
 
     if (ordenarPor === OrdenacaoRankingInfluenciador.ENGAJAMENTO) {
       data.sort((a, b) => b.mediaEngajamento - a.mediaEngajamento);
+
       data.forEach((item, index) => {
         item.posicao = this.calcularPosicao(page, limit, index);
       });
@@ -121,7 +159,7 @@ export class RankingsService {
 
     const totalPages = Math.ceil(result.total / limit);
 
-    const response = {
+    const response: RankingInfluenciadoresResponse = {
       data,
       total: result.total,
       page,
@@ -135,10 +173,16 @@ export class RankingsService {
     return response;
   }
 
+  /**
+   * Calcula a posição global do item considerando a página atual.
+   */
   private calcularPosicao(page: number, limit: number, index: number): number {
     return (page - 1) * limit + index + 1;
   }
 
+  /**
+   * Monta uma chave de cache estável a partir dos filtros informados.
+   */
   private montarCacheKey(
     tipo: string,
     filtros: Record<string, unknown>,
