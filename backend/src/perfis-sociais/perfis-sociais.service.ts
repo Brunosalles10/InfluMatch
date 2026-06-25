@@ -1,8 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Plataforma, Prisma } from '@prisma/client';
 import { ListarPerfisSociaisDto } from './dto/listar-perfis-sociais.dto';
-import { PerfilSocialMapper } from './mappers/perfil-social.mapper';
+import {
+  PerfilSocialMapper,
+  type PerfilSocialResponse,
+} from './mappers/perfil-social.mapper';
 import { PerfisSociaisRepository } from './perfis-sociais.repository';
+
+export interface PerfisSociaisPaginadosResponse {
+  data: PerfilSocialResponse[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
 
 @Injectable()
 export class PerfisSociaisService {
@@ -10,7 +20,12 @@ export class PerfisSociaisService {
     private readonly perfisSociaisRepository: PerfisSociaisRepository,
   ) {}
 
-  async listar(filtros: ListarPerfisSociaisDto) {
+  /**
+   * Lista perfis sociais com paginação e filtros opcionais.
+   */
+  async listar(
+    filtros: ListarPerfisSociaisDto,
+  ): Promise<PerfisSociaisPaginadosResponse> {
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 10;
 
@@ -22,14 +37,19 @@ export class PerfisSociaisService {
     });
 
     return {
-      data: result.data.map(PerfilSocialMapper.paraResposta),
+      data: result.data.map((perfil) =>
+        PerfilSocialMapper.paraResposta(perfil),
+      ),
       total: result.total,
       page,
       lastPage: Math.ceil(result.total / limit),
     };
   }
 
-  async buscarPorId(id: string) {
+  /**
+   * Busca um perfil social pelo ID e retorna erro quando não existir.
+   */
+  async buscarPorId(id: string): Promise<PerfilSocialResponse> {
     const perfil = await this.perfisSociaisRepository.buscarPorId(id);
 
     if (!perfil) {
@@ -39,6 +59,9 @@ export class PerfisSociaisService {
     return PerfilSocialMapper.paraResposta(perfil);
   }
 
+  /**
+   * Cria ou atualiza um perfil social usando plataforma e identificador externo.
+   */
   upsertPorIdentificador(params: {
     plataforma: Plataforma;
     identificadorExterno: string;

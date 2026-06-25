@@ -1,16 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { type Nicho, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class NichosRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  criar(data: Prisma.NichoCreateInput) {
+  /**
+   * Persiste um novo nicho no banco de dados.
+   */
+  criar(data: Prisma.NichoCreateInput): Promise<Nicho> {
     return this.prisma.nicho.create({ data });
   }
 
-  listar(busca?: string) {
+  /**
+   * Lista nichos em ordem alfabética, filtrando por nome ou slug quando houver busca.
+   */
+  listar(busca?: string): Promise<Nicho[]> {
     return this.prisma.nicho.findMany({
       where: busca
         ? {
@@ -21,15 +27,17 @@ export class NichosRepository {
     });
   }
 
-  buscarPorId(id: string) {
+  /**
+   * Busca um nicho pela chave primária.
+   */
+  buscarPorId(id: string): Promise<Nicho | null> {
     return this.prisma.nicho.findUnique({ where: { id } });
   }
 
-  buscarPorSlug(slug: string) {
+  /**
+   * Busca um nicho pelo slug único.
+   */
+  buscarPorSlug(slug: string): Promise<Nicho | null> {
     return this.prisma.nicho.findUnique({ where: { slug } });
-  }
-
-  buscarPorNome(nome: string) {
-    return this.prisma.nicho.findUnique({ where: { nome } });
   }
 }
