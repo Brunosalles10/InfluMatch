@@ -7,6 +7,12 @@ type ParametrosRequisicao = Record<
   string | number | boolean | null | undefined
 >;
 
+/**
+ * Classe base para serviços que se comunicam com a API.
+ *
+ * Centraliza os métodos HTTP comuns para evitar repetição nos services
+ * específicos, como authService, usuariosService, rankingsService etc.
+ */
 export abstract class ServicoApiBase {
   protected async buscar<TResposta>(
     url: string,

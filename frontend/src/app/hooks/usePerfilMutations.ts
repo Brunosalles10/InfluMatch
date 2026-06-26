@@ -14,64 +14,119 @@ type UsePerfilMutationsParams = {
   logout: () => void;
 };
 
+/**
+ * Centraliza as mutations relacionadas ao perfil do usuário autenticado.
+ */
 export function usePerfilMutations({
   usuario,
   recarregarPerfil,
   logout,
 }: UsePerfilMutationsParams) {
+  /**
+   * Envia a atualização de perfil para a API usando o ID do usuário logado.
+   */
+  async function executarAtualizacaoPerfil(
+    dados: DadosAtualizarPerfil,
+  ): Promise<unknown> {
+    if (!usuario?.id) {
+      throw new Error("Usuário autenticado não encontrado.");
+    }
+
+    return usuariosService.atualizarMinhaConta(
+      usuario.id,
+      mapearAtualizarPerfilParaDto(dados),
+    );
+  }
+
+  /**
+   * Envia a alteração de senha para a API no formato esperado pelo backend.
+   */
+  function executarAlteracaoSenha(dados: DadosAlterarSenha): Promise<unknown> {
+    return usuariosService.alterarMinhaSenha(mapearAlterarSenhaParaDto(dados));
+  }
+
+  /**
+   * Solicita a exclusão lógica da conta do usuário autenticado.
+   */
+  function executarExclusaoConta(): Promise<unknown> {
+    return usuariosService.deletarMinhaConta();
+  }
+
+  /**
+   * Atualiza os dados do perfil exibidos no frontend após uma edição bem-sucedida.
+   */
+  async function tratarAtualizacaoPerfilComSucesso(): Promise<void> {
+    await recarregarPerfil();
+
+    toast.success("Perfil atualizado com sucesso.");
+  }
+
+  /**
+   * Exibe mensagem de sucesso após a senha ser alterada.
+   */
+  function tratarAlteracaoSenhaComSucesso(): void {
+    toast.success("Senha alterada com sucesso.");
+  }
+
+  /**
+   * Encerra a sessão após a conta ser deletada com sucesso.
+   */
+  function tratarExclusaoContaComSucesso(): void {
+    toast.success("Conta deletada com sucesso.");
+    logout();
+  }
+
+  /**
+   * Exibe uma mensagem amigável quando alguma mutation falha.
+   */
+  function tratarErroMutation(erro: unknown): void {
+    toast.error(obterMensagemErro(erro));
+  }
+
+  /**
+   * Controla a mutation responsável por atualizar nome/e-mail do perfil.
+   */
   const atualizarPerfilMutation = useMutation({
-    mutationFn: async (dados: DadosAtualizarPerfil) => {
-      if (!usuario?.id) {
-        throw new Error("Usuário autenticado não encontrado.");
-      }
-
-      return usuariosService.atualizarMinhaConta(
-        usuario.id,
-        mapearAtualizarPerfilParaDto(dados),
-      );
-    },
-    onSuccess: async () => {
-      await recarregarPerfil();
-      toast.success("Perfil atualizado com sucesso.");
-    },
-    onError: (erro) => {
-      toast.error(obterMensagemErro(erro));
-    },
+    mutationFn: executarAtualizacaoPerfil,
+    onSuccess: tratarAtualizacaoPerfilComSucesso,
+    onError: tratarErroMutation,
   });
 
+  /**
+   * Controla a mutation responsável por alterar a senha do usuário.
+   */
   const alterarSenhaMutation = useMutation({
-    mutationFn: (dados: DadosAlterarSenha) => {
-      return usuariosService.alterarMinhaSenha(
-        mapearAlterarSenhaParaDto(dados),
-      );
-    },
-    onSuccess: () => {
-      toast.success("Senha alterada com sucesso.");
-    },
-    onError: (erro) => {
-      toast.error(obterMensagemErro(erro));
-    },
+    mutationFn: executarAlteracaoSenha,
+    onSuccess: tratarAlteracaoSenhaComSucesso,
+    onError: tratarErroMutation,
   });
 
+  /**
+   * Controla a mutation responsável por deletar a conta autenticada.
+   */
   const deletarContaMutation = useMutation({
-    mutationFn: () => usuariosService.deletarMinhaConta(),
-    onSuccess: () => {
-      toast.success("Conta deletada com sucesso.");
-      logout();
-    },
-    onError: (erro) => {
-      toast.error(obterMensagemErro(erro));
-    },
+    mutationFn: executarExclusaoConta,
+    onSuccess: tratarExclusaoContaComSucesso,
+    onError: tratarErroMutation,
   });
 
+  /**
+   * Expõe a ação de atualizar perfil para os componentes da tela.
+   */
   async function atualizarPerfil(dados: DadosAtualizarPerfil): Promise<void> {
     await atualizarPerfilMutation.mutateAsync(dados);
   }
 
+  /**
+   * Expõe a ação de alterar senha para os componentes da tela.
+   */
   async function alterarSenha(dados: DadosAlterarSenha): Promise<void> {
     await alterarSenhaMutation.mutateAsync(dados);
   }
 
+  /**
+   * Expõe a ação de deletar conta para os componentes da tela.
+   */
   async function deletarConta(): Promise<void> {
     await deletarContaMutation.mutateAsync();
   }
@@ -86,7 +141,10 @@ export function usePerfilMutations({
   };
 }
 
-function obterMensagemErro(erro: unknown) {
+/**
+ * Converte erros conhecidos e desconhecidos em mensagens exibíveis ao usuário.
+ */
+function obterMensagemErro(erro: unknown): string {
   if (erro instanceof ErroApi) {
     return erro.message;
   }
