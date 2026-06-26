@@ -5,10 +5,8 @@
 
     "target": "ES2023",
 
-    "baseUrl": ".",
-
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["./src/*"]
     },
 
     "types": ["node", "jest"],
@@ -36,7 +34,6 @@
 
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false,
-    "types": ["node", "jest"]
+    "noFallthroughCasesInSwitch": false
   }
 }
